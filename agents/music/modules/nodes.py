@@ -48,7 +48,7 @@ class DiaryGenerationNode(BaseNode):
         ]
         query_response = self.model.invoke(messages)
         query_response = query_response.text()
-        
+
         return {"youtube_query" : query_response}
 
     def __call__(self, state):
@@ -148,12 +148,14 @@ class LyricGenerationNode(BaseNode):
         """
         self.logging("execute", input_state=state)
         prompt = get_lyric_template().format(
-            query=state["lyric_query"], 
+            # query=state["lyric_query"], 
+            query=state["youtube_query"], 
             weather_info=state["weather_info"], 
             video_analysis=state["video_analysis"]
         )
         response = self.model.invoke(prompt)
-        return {"response": response, "query": state["lyric_query"]}
+        # return {"response": response, "query": state["lyric_query"]}
+        return {"response": response}
 
     def __call__(self, state: MusicState) -> dict:
         """
