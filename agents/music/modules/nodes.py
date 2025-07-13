@@ -48,10 +48,7 @@ class DiaryGenerationNode(BaseNode):
         ]
         query_response = self.model.invoke(messages)
         query_response = query_response.text()
-<<<<<<< Updated upstream
         
-=======
->>>>>>> Stashed changes
         return {"youtube_query" : query_response}
 
     def __call__(self, state):
@@ -127,10 +124,6 @@ class YoutubeAnalysisNode(BaseNode):
                 ]
             )
         )
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
         return {"video_analysis" : response.text}
 
     def __call__(self, state):
