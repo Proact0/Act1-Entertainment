@@ -8,7 +8,7 @@ import os
 import base64
 from datetime import datetime
 from agents.base_node import BaseNode
-from agents.image.modules.chains import set_image_generation_chain
+from agents.image.modules.chains import set_image_generation_chain, set_context_chain
 from typing import Dict, Any
 from langchain_core.runnables import RunnableSerializable
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -18,7 +18,9 @@ from dotenv import load_dotenv
 from agents.text.modules.persona import PERSONA
 from agents.base_node import BaseNode
 from agents.image.modules.state import ImageState
-from agents.image.modules.prompts import get_image_generation_prompt
+from agents.image.modules.prompts import get_image_generation_prompt, get_context_prompt
+
+import json
 
 
 load_dotenv()
@@ -28,7 +30,7 @@ class ImageGenerationNode(BaseNode):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs) 
-        self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp-image-generation")
+        self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
         self.chain = set_image_generation_chain()
         self.prompt = get_image_generation_prompt()
    
@@ -38,19 +40,43 @@ class ImageGenerationNode(BaseNode):
         
         response = prompt_chain.invoke(
             {
-                "content_topic": state["content_topic"],  # 콘텐츠 주제
-                "content_type": state["content_type"],  # 콘텐츠 유형
-                "persona_details": PERSONA,  # 페르소나 세부 정보
+                "content_topic": state['content_topic'], 
+                "content_type": state['content_type'],
+                "context_detail":state['context_detail'],
+                "persona": state['persona']  # 페르소나 세부 정보
             }
-        , generation_config = dict(response_modalities = ["TEXT", "IMAGE"]))
+        , generation_config = dict(response_modalities = ["TEXT"]))
         
-        image_base64 = response.content[1].get("image_url").get("url").split(",")[-1]
-        image_data = base64.b64decode(image_base64)
         
-        with open("output.png", "wb") as f: 
-            f.write(image_data)
         
-        return state
+        return {"response": response}
+    
+class getInputNode(BaseNode):
+    """
+    다른 노드로부터 온 input을 받아서, 해석하는 노드 
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        self.chain = set_context_chain()
+        self.prompt = get_context_prompt()
+    
+    def execute(self, state: ImageState) -> dict:
+        prompt_chain = self.chain
+
+        response = prompt_chain.invoke(
+            {
+                "content_topic": state['content_topic'], 
+                "content_type": state['content_type'],
+                "context": state['context'] , 
+                "persona": PERSONA  
+            }
+        , generation_config = dict(response_modalities = ["TEXT"]))
+
+        
+        return {'response':response
+                }
 
 
 

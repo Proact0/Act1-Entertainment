@@ -7,21 +7,21 @@
 from langchain_core.prompts import PromptTemplate
 from agents.image.modules.state import ImageState
 
-def get_image_generation_prompt() -> str:
-    """
-    이미지 생성을 위한 프롬프트 템플릿을 반환합니다.
+# def get_image_generation_prompt() -> str:
+#     """
+#     이미지 생성을 위한 프롬프트 템플릿을 반환합니다.
 
-    Returns:
-        str: 이미지 생성 프롬프트 템플릿
-    """
-    return """
-    목적: {purpose}
+#     Returns:
+#         str: 이미지 생성 프롬프트 템플릿
+#     """
+#     return """
+#     목적: {purpose}
     
-    다음 텍스트를 기반으로 이미지를 생성해주세요:
-    {text}
+#     다음 텍스트를 기반으로 이미지를 생성해주세요:
+#     {text}
     
-    이미지는 고품질이어야 하며, 텍스트의 감성과 분위기를 잘 표현해야 합니다.
-    """
+#     이미지는 고품질이어야 하며, 텍스트의 감성과 분위기를 잘 표현해야 합니다.
+#     """
 
 def get_text_response_prompt(state: ImageState) -> str:
     """
@@ -55,20 +55,43 @@ def get_image_generation_prompt()->PromptTemplate:
         PromptTemplate: 이미지 생성을 위한 프롬프트 템플릿 객체
     """
     # 이미지 생성을 위한 프롬프트 템플릿 정의
-    image_generation_template = """당신은 배경 디자이너 입니다.
-        제가 드리는 페르소나와 텍스트 내용에 따라서 배경 이미지를 생성해 주세요.
-        인물, 텍스트가 나오면 안됩니다. 
-        제가 하는 말은 영어로 번역해서 진행해주세요.
-        배경의 용도는 {content_type}용 입니다. 
-        여기에 부여되어야 하는 페르소나는 다음과 같습니다: {persona_details}
-        이용하고자 하는 텍스트 
-        {content_topic}
-
-        Please generate the image instead of persona, and Don't give me the options. 
+    image_generation_template = """당신은 상업용 이미지 배경 디자이너 입니다.
+        제가 드리는 페르소나와 내용에 따라서 배경 이미지 설명을 생성해 주세요.
+        이미지에는 텍스트, 인물이 절대 들어가서는 안됩니다.
+        여기에 부여되어야 하는 페르소나는 다음과 같습니다: {persona}
+        이미지의 구성은 다음과 같습니다:
+        이미지 유형 : {content_type}
+        이미지 주제 : {content_topic}
+        이미지 내용 : {context_detail}
+      
     """
 
     # PromptTemplate 객체 생성 및 반환
     return PromptTemplate(
         template=image_generation_template,  # 정의된 프롬프트 템플릿
-        input_variables=["content_type", "persona_details", "content_topic"],  # 프롬프트에 삽입될 변수들
+        input_variables=["content_type", "persona", "content_topic","context_detail"],  # 프롬프트에 삽입될 변수들
+    )
+
+
+def get_context_prompt()->PromptTemplate:
+    """
+    input으로 받은 json 객체를 해석할 수 있도록 하는 프롬프트 템플릿을 생성합니다.
+
+    프롬프트는 input으로 받은 객체를 자신만의 언어로 다시 해석하도록 하는 내용을 담고 있습니다. 
+    생성된 내용은 한국어로 반환됩니다.
+    
+    Returns:
+        PromptTemplate: 이미지 생성을 위한 프롬프트 템플릿 객체
+    
+    
+    """
+    
+    context_generation_template = """
+    당신은 상업용 사진 감독 입니다. 제가 드리는 컨셉 키워드 들을 가지고 어떤 컨셉으로 사진을 촬영할지 지정해 주세요.
+    제가 드리는 키워드는 이렇습니다 : {context}
+    """
+
+    return PromptTemplate(
+        template = context_generation_template,
+        input_variables = ["context"]
     )

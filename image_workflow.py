@@ -13,17 +13,34 @@ from langchain_core.runnables import RunnableLambda
 from agents.text.modules.persona import PERSONA
 from agents.image.modules.state import ImageState
 
-from agents.image.modules.nodes import ImageGenerationNode
+from agents.image.modules.nodes import ImageGenerationNode, getInputNode
 from agents.text.modules.nodes import PersonaExtractionNode
 
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp-image-generation")
+llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
 
 template = ChatPromptTemplate.from_template(prompt)
 
+def get_input() -> list:
 
+    with open('./data.json', 'r', encoding = 'utf-8') as f:
+        json_data = json.load(f)
+    
+    data = json_data
+
+    return data 
+
+def input_extraction_node(state:dict) -> dict:
+    interpret_input_node = getInputNode(name = "input_node")
+    interpreted_text = interpret_input_node.execute(state)
+
+    return {"content_topic": "앨범 커버", 
+        "content_type": "앨범 제작",
+        "context":state['context'],
+        "context_describe": interpreted_text['response'] ,
+        "persona": PERSONA}
 
 def persona_extraction_node(state: dict) -> dict:
     persona_node = PersonaExtractionNode(name="persona_extraction")
@@ -32,7 +49,9 @@ def persona_extraction_node(state: dict) -> dict:
     return {
         "content_topic": state["content_topic"],
         "content_type": state["content_type"],
-        "persona": extracted_persona
+        "context_detail":state['context_describe'
+        ''],
+        "persona":extracted_persona
     }
 
 def image_generation_node(state: dict) -> dict:
@@ -42,10 +61,13 @@ def image_generation_node(state: dict) -> dict:
 
 def build_graph():
     builder = StateGraph(dict)  # ImageState 대신 dict 사용
+    builder.add_node("InputExtraction", RunnableLambda(input_extraction_node))
     builder.add_node("PersonaExtraction", RunnableLambda(persona_extraction_node))
     builder.add_node("ImageGeneration", RunnableLambda(image_generation_node))
     
-    builder.set_entry_point("PersonaExtraction")
+    
+    builder.set_entry_point("InputExtraction")
+    builder.add_edge("InputExtraction","PersonaExtraction")
     builder.add_edge("PersonaExtraction", "ImageGeneration")
     builder.add_edge("ImageGeneration", END)  # set_finish_point 대신 END 사용
 
@@ -53,9 +75,11 @@ def build_graph():
 
 if __name__ == "__main__":
     graph = build_graph()
+    inputData = get_input()
     initial_state = {
-        "content_topic": "마침 주말 해가 밝아와 부를 사람 하나 없지만 꺼놓은 radio 를 틀고 이 작은 city (CD) 안에 꼬인 테이프 내 맘을 달래주는 노래네 시계 소리마저 멜로딘걸 oh", 
+        "content_topic": "앨범 커버", 
         "content_type": "앨범 제작",
+        "context": inputData ,
         "persona": PERSONA
     }
     result = graph.invoke(initial_state)

@@ -8,7 +8,7 @@ from langchain.schema.runnable import RunnablePassthrough, RunnableSerializable
 from langchain_core.output_parsers import StrOutputParser
 
 from agents.image.modules.models import get_gemini_model
-from agents.image.modules.prompts import get_image_generation_prompt
+from agents.image.modules.prompts import get_image_generation_prompt, get_context_prompt
 
 from agents.text.modules.persona import PERSONA
 
@@ -27,12 +27,29 @@ def set_image_generation_chain() -> RunnableSerializable:
          RunnablePassthrough.assign(
             content_topic=lambda x: x["content_topic"],  # 콘텐츠 주제 추출
             content_type=lambda x: x["content_type"],  # 콘텐츠 유형 추출
-            persona_details=lambda x: PERSONA,
+            persona=lambda x: PERSONA,
+            context_detail = lambda x: x["context_detail"]
         )
          | prompt  # 프롬프트 적용
          | model   # LLM 모델 호출
          | StrOutputParser()  # 결과를 문자열로 변환
        )
+
+def set_context_chain() -> RunnableSerializable:
+        prompt = get_context_prompt()
+        model = get_gemini_model()
+
+         # LCEL을 사용하여 체인 구성
+        return (
+         # 입력에서 필요한 필드 추출 및 프롬프트에 전달
+         RunnablePassthrough.assign(
+            context = lambda x: x['context']
+        )
+         | prompt  # 프롬프트 적용
+         | model   # LLM 모델 호출
+         | StrOutputParser()  # 결과를 문자열로 변환
+       )
+
         
 
 # def set_image_generation_chain() -> RunnableSerializable:
