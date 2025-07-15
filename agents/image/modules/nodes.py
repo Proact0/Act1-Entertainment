@@ -9,10 +9,34 @@ import re
 from agents.image.modules.chains import get_outfit_prompt_chain
 
 
+def concept_adapter_for_outfit_node(state):
+    concept_list = state["concept_analysis_result"]
+
+    # 상위 3개 콘셉트만 선택 (예: keyword 기준 or index 우선)
+    selected = concept_list[:3]
+
+    # keyword + visual_metaphor + color_texture를 조합해서 설명 만들기
+    descs = []
+    for c in selected:
+        keyword = c["keyword"]
+        metaphor = c["visual_metaphor"]
+        color = c["color_texture"]
+        descs.append(f"{keyword} ({metaphor}, {color})")
+
+    # 하나의 간결한 프롬프트 입력 문장 생성
+    prompt_input = (
+        "This concept includes elements like "
+        + ", ".join(descs)
+        + ". Create an outfit that visually represents these ideas."
+    )
+
+    return {**state, "adapted_outfit_prompt_input": prompt_input}
+
+
 def generate_outfit_prompt_node(state):
-    user_request = state["query"]
+    user_request = state["adapted_outfit_prompt_input"]
     chain = get_outfit_prompt_chain()
-    result = chain.run(user_request)
+    result = chain.run({"user_request": user_request})
     return {**state, "outfit_prompt": result}
 
 
@@ -64,44 +88,3 @@ def refine_outfit_prompt_with_llm_node(state):
     refined_prompt = chain.run({"raw_prompt": raw_prompt})
 
     return {**state, "refined_outfit_prompt": refined_prompt.strip()}
-
-
-# from agents.base_node import BaseNode
-
-# from agents.image.modules.chains import set_image_generation_chain
-
-
-# class ImageGenerationNode(BaseNode):
-#     """
-#     이미지 생성을 위한 노드
-
-#     이 노드는 사용자의 요청에 따라 이미지를 생성하는 기능을 담당합니다.
-#     """
-
-#     def __init__(self, **kwargs):
-#         super().__init__(**kwargs)  # BaseNode 초기화
-#         # self.chain = set_image_generation_chain()  # 이미지 생성 체인 설정
-
-#     def execute(self, state) -> dict:
-#         """
-#         주어진 상태(state)에서 query를 추출하여
-#         이미지 생성 체인에 전달하고, 결과를 응답으로 반환합니다.
-
-#         Args:
-#             state: 현재 워크플로우 상태
-
-#         Returns:
-#             dict: 생성된 이미지 정보가 포함된 응답
-#         """
-#         # 실제 구현은 추후 개발 시 추가
-#         # generated_image = self.chain.invoke(
-#         #     {
-#         #         "query": state["query"],  # 사용자 쿼리
-#         #     }
-#         # )
-
-#         # 더미 응답 생성
-#         dummy_response = "이미지 생성 기능은 아직 구현되지 않았습니다."
-
-#         # 응답 반환
-#         return {"response": dummy_response}

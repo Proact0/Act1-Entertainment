@@ -9,8 +9,9 @@ from langchain_core.prompts import PromptTemplate
 outfit_prompt_template = PromptTemplate.from_template(
     "You are a fashion styling expert. The user's request is: '{user_request}'.\n"
     "Please describe an outfit suitable for the season, location, and mood in detail.\n"
-    "At the end of your response, include a section titled 'Image Generation Prompt:' and write one paragraph in English that vividly describes the outfit for an AI image generation model.\n"
-    "Make sure the description includes gender, age, outfit elements, accessories, and setting.\n"
+    "At the end of your response, include a section titled 'Image Generation Prompt:' and write one paragraph in English that describes only the clothing and accessories.\n"
+    "Do not include background, facial expression, pose, or any scene-related details.\n"
+    "Focus only on the fashion items — their style, color, texture, and how they are combined."
 )
 
 # def get_image_generation_prompt():

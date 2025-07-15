@@ -22,10 +22,13 @@ class ImageState(TypedDict):
     LangGraph의 상태 관리를 위한 클래스로, Workflow 내에서 처리되는 데이터의 형태와 구조를 지정합니다.
     """
 
+    concept_analysis_result: list  # 콘셉트 분석 결과 목록 (1차)
     query: str  # 사용자 쿼리 또는 요청사항
     response: Annotated[
         list, add_messages
     ]  # 응답 메시지 목록 (add_messages로 주석되어 메시지 추가 기능 제공)
     outfit_prompt: str
     refined_outfit_prompt: str
+    adapted_outfit_prompt_input: str
+
     # 의상 프롬프트 (사용자의 요청에 따라 생성된 의상 스타일링 프롬프트)

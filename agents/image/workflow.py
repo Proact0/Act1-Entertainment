@@ -9,6 +9,7 @@ from langgraph.graph import StateGraph
 
 from agents.base_workflow import BaseWorkflow
 from agents.image.modules.nodes import (
+    concept_adapter_for_outfit_node,
     generate_outfit_prompt_node,
     refine_outfit_prompt_node,
     refine_outfit_prompt_with_llm_node,
@@ -27,6 +28,7 @@ class ImageWorkflow(BaseWorkflow):
     def __init__(self, state):
         super().__init__()
         self.state = state
+        self.name = "image_workflow"  # ← 여기 추가
 
     def build(self):
         """
@@ -50,11 +52,13 @@ class ImageWorkflow(BaseWorkflow):
         # builder.add_edge("image_generation", "__end__")
 
         # 의상 프롬프트 생성 노드 추가
+        builder.add_node("adapt_outfit_concept", concept_adapter_for_outfit_node)
         builder.add_node("generate_outfit_prompt", generate_outfit_prompt_node)
         builder.add_node("refine_prompt_rule", refine_outfit_prompt_node)
         builder.add_node("refine_prompt_llm", refine_outfit_prompt_with_llm_node)
 
-        builder.add_edge("__start__", "generate_outfit_prompt")
+        builder.add_edge("__start__", "adapt_outfit_concept")
+        builder.add_edge("adapt_outfit_concept", "generate_outfit_prompt")
         builder.add_edge("generate_outfit_prompt", "refine_prompt_rule")
         builder.add_edge("generate_outfit_prompt", "refine_prompt_llm")
 
