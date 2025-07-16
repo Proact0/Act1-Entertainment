@@ -1,5 +1,4 @@
 from mcp.server.fastmcp import FastMCP
-import httpx
 
 from typing import List, Dict, Any
 
