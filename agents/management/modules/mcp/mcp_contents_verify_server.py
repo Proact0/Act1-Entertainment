@@ -1,14 +1,21 @@
 import json
+import logging
 import os
 from typing import Any, Dict, List
 
 import httpx
 from mcp.server.fastmcp import FastMCP
 
+# 로깅 설정
+logging.basicConfig(
+    level=logging.INFO, format=("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+)
+logger = logging.getLogger(__name__)
+
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
 MCP_CONTENTS_HOST = os.getenv("MCP_CONTENTS_HOST", "0.0.0.0")
 MCP_CONTENTS_PORT = int(os.getenv("MCP_CONTENTS_PORT", 8200))
-MCP_CONTENTS_TRANSPORT = os.getenv("MCP_CONTENTS_TRANSPORT", "stdio")
+MCP_CONTENTS_TRANSPORT = os.getenv("MCP_CONTENTS_TRANSPORT", "http")
 
 contents_mcp = FastMCP(
     name="contents_verify",
@@ -35,7 +42,11 @@ async def verify_instagram_content(
     Returns:
         Dict[str, Any]: 검증 결과
     """
+    logger.info(f"인스타그램 컨텐츠 검증 시작: {content_type}")
+    logger.info(f"컨텐츠 길이: {len(content_text)} 문자")
+
     if not PERPLEXITY_API_KEY:
+        logger.error("PERPLEXITY_API_KEY가 설정되지 않았습니다.")
         return {
             "error": "PERPLEXITY_API_KEY가 설정되지 않았습니다.",
             "is_approved": False,
@@ -343,8 +354,20 @@ def _fallback_analysis(content_text: str, content_type: str) -> Dict[str, Any]:
 
 
 if __name__ == "__main__":
+    logger.info("MCP Contents Verify 서버 시작 중...")
+    logger.info(f"호스트: {MCP_CONTENTS_HOST}")
+    logger.info(f"포트: {MCP_CONTENTS_PORT}")
+    logger.info(f"전송 방식: {MCP_CONTENTS_TRANSPORT}")
+
+    if PERPLEXITY_API_KEY:
+        logger.info("PERPLEXITY_API_KEY가 설정되어 있습니다.")
+    else:
+        logger.warning("PERPLEXITY_API_KEY가 설정되지 않았습니다.")
+
     print(
         f"contents_verify MCP server is running on "
         f"{MCP_CONTENTS_HOST}:{MCP_CONTENTS_PORT}"
     )
-    contents_mcp.run(transport=MCP_CONTENTS_TRANSPORT)
+
+    # FastMCP는 기본적으로 HTTP 서버로 실행됨
+    contents_mcp.run()
