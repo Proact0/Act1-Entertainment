@@ -778,16 +778,16 @@ wheels = [
 
 [[package]]
 name = "langchain-mcp-adapters"
-version = "0.1.8"
+version = "0.1.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "langchain-core" },
     { name = "mcp" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8a/f2/f61eef5dc4b7e2bbb65ea904d59b96bd36c7017265c8e4a99c23688771cd/langchain_mcp_adapters-0.1.8.tar.gz", hash = "sha256:5fc6a596b73be96198135a11707102e3a7e9470b4d149bbbb1c9f9d902e0fa42", size = 20750, upload-time = "2025-06-30T19:28:46.578Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b9/74/e36003a43136f9095a5f968c730fbfe894f94284ebe6d2b50bb17d41b8b5/langchain_mcp_adapters-0.1.9.tar.gz", hash = "sha256:0018cf7b5f7bc4c044e05ec20fcb9ebe345311c8d1060c61d411188001ab3aab", size = 22101, upload-time = "2025-07-09T15:56:14.455Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/25/28/86e7abd8ca1ba9057556d1b3c562f61fa068eb59ca7f74aea0dbc1c58115/langchain_mcp_adapters-0.1.8-py3-none-any.whl", hash = "sha256:037323b772f3214986b127fe89d2e7e721ca5e852a618cdbbf00cc955154cc90", size = 13795, upload-time = "2025-06-30T19:28:44.75Z" },
+    { url = "https://files.pythonhosted.org/packages/a4/eb/9e98822d3db22beff44449a8f61fca208d4f59d592a7ce67ce4c400b8f8f/langchain_mcp_adapters-0.1.9-py3-none-any.whl", hash = "sha256:fd131009c60c9e5a864f96576bbe757fc1809abd604891cb2e5d6e8aebd6975c", size = 15300, upload-time = "2025-07-09T15:56:13.316Z" },
 ]
 
 [[package]]
@@ -953,29 +953,13 @@ name = "management"
 version = "0.1.0"
 source = { virtual = "agents/management" }
 dependencies = [
-    { name = "fastmcp" },
-    { name = "httpx" },
-    { name = "langchain" },
     { name = "langchain-mcp-adapters" },
-    { name = "langchain-openai" },
-    { name = "langgraph" },
-    { name = "mcp" },
-    { name = "newsapi-python" },
-    { name = "pydantic" },
     { name = "python-dotenv" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "fastmcp", specifier = ">=0.1.0" },
-    { name = "httpx", specifier = ">=0.24.0" },
-    { name = "langchain", specifier = ">=0.1.0" },
-    { name = "langchain-mcp-adapters", specifier = ">=0.1.0" },
-    { name = "langchain-openai", specifier = ">=0.1.0" },
-    { name = "langgraph", specifier = ">=0.1.0" },
-    { name = "mcp", specifier = ">=1.0.0" },
-    { name = "newsapi-python", specifier = ">=0.2.6" },
-    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "langchain-mcp-adapters", specifier = ">=0.1.9" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
 ]
 
@@ -1351,9 +1335,15 @@ name = "pseudo-entertainment"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "fastmcp" },
+    { name = "httpx" },
     { name = "langchain" },
     { name = "langchain-community" },
+    { name = "langchain-mcp-adapters" },
+    { name = "langchain-openai" },
     { name = "langgraph" },
+    { name = "mcp" },
+    { name = "newsapi-python" },
     { name = "python-dotenv" },
 ]
 
@@ -1367,9 +1357,15 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "fastmcp", specifier = ">=0.1.0" },
+    { name = "httpx", specifier = ">=0.24.0" },
     { name = "langchain", specifier = ">=0.3.23" },
     { name = "langchain-community", specifier = ">=0.2.17" },
+    { name = "langchain-mcp-adapters", specifier = ">=0.1.9" },
+    { name = "langchain-openai", specifier = ">=0.3.12" },
     { name = "langgraph", specifier = ">=0.3.27" },
+    { name = "mcp", specifier = ">=1.0.0" },
+    { name = "newsapi-python", specifier = ">=0.2.6" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
 ]
 

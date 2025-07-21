@@ -1,13 +1,7 @@
 from langgraph.graph import StateGraph
 
 from agents.base_workflow import BaseWorkflow
-from agents.management.modules.conditions import route_request
-from agents.management.modules.nodes import (
-    ContentRisksAnalysisNode,
-    InstagramContentVerificationNode,
-    InstagramPoliciesSearchNode,
-    ResourceManagementNode,
-)
+from agents.management.modules.nodes import InstagramContentVerificationNode
 from agents.management.modules.state import ManagementState
 
 
@@ -36,40 +30,11 @@ class ManagementWorkflow(BaseWorkflow):
             CompiledStateGraph: 컴파일된 상태 그래프 객체
         """
         builder = StateGraph(self.state)
-
-        # 노드들 추가
-        builder.add_node("resource_management", ResourceManagementNode())
-        builder.add_node(
-            "instagram_content_verification", InstagramContentVerificationNode()
-        )
-        builder.add_node("instagram_policies_search", InstagramPoliciesSearchNode())
-        builder.add_node("content_risks_analysis", ContentRisksAnalysisNode())
-        builder.add_node("router", route_request)  # router 노드 추가
-
-        # 시작 노드에서 라우터로 연결
-        builder.add_edge("__start__", "router")
-
-        # 조건부 에지를 통한 라우팅
-        builder.add_conditional_edges(
-            "router",
-            route_request,
-            {
-                "resource_management": "resource_management",
-                "instagram_content_verification": "instagram_content_verification",
-                "instagram_policies_search": "instagram_policies_search",
-                "content_risks_analysis": "content_risks_analysis",
-            },
-        )
-
-        # 각 노드에서 종료 노드로 연결
-        builder.add_edge("resource_management", "__end__")
+        builder.add_node("instagram_content_verification", InstagramContentVerificationNode())
+        builder.add_edge("__start__", "instagram_content_verification")
         builder.add_edge("instagram_content_verification", "__end__")
-        builder.add_edge("instagram_policies_search", "__end__")
-        builder.add_edge("content_risks_analysis", "__end__")
-
-        workflow = builder.compile()  # 그래프 컴파일
-        workflow.name = self.name  # Workflow 이름 설정
-
+        workflow = builder.compile()
+        workflow.name = self.name
         return workflow
 
 

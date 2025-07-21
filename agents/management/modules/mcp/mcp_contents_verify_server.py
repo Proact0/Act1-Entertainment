@@ -4,7 +4,7 @@ import os
 from typing import Any, Dict, List
 
 import httpx
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 # 로깅 설정
 logging.basicConfig(
@@ -44,6 +44,7 @@ async def verify_instagram_content(
     """
     logger.info(f"인스타그램 컨텐츠 검증 시작: {content_type}")
     logger.info(f"컨텐츠 길이: {len(content_text)} 문자")
+    logger.info(f"verify_instagram_content called with: {content_text}, {content_type}")
 
     if not PERPLEXITY_API_KEY:
         logger.error("PERPLEXITY_API_KEY가 설정되지 않았습니다.")
@@ -165,6 +166,7 @@ async def search_instagram_policies(keywords: str) -> List[Dict[str, Any]]:
     Returns:
         List[Dict[str, Any]]: 정책 정보 목록
     """
+    logger.info(f"search_instagram_policies called with: {keywords}")
     if not PERPLEXITY_API_KEY:
         return [{"error": "PERPLEXITY_API_KEY가 설정되지 않았습니다."}]
 
@@ -239,6 +241,7 @@ async def analyze_content_risks(content_text: str) -> List[Dict[str, Any]]:
     Returns:
         List[Dict[str, Any]]: 위험 요소 분석 결과
     """
+    logger.info(f"analyze_content_risks called with: {content_text}")
     if not PERPLEXITY_API_KEY:
         return [{"error": "PERPLEXITY_API_KEY가 설정되지 않았습니다."}]
 
@@ -369,5 +372,5 @@ if __name__ == "__main__":
         f"{MCP_CONTENTS_HOST}:{MCP_CONTENTS_PORT}"
     )
 
-    # FastMCP는 기본적으로 HTTP 서버로 실행됨
-    contents_mcp.run()
+    # HTTP 서버로 명시적으로 실행
+    contents_mcp.run(transport="http", host=MCP_CONTENTS_HOST, port=MCP_CONTENTS_PORT)

@@ -2,7 +2,7 @@
 # management 모듈 의존성 설치
 #cd /app/data/Pseudo-Entertainment
 #bash agents/management/management_agents.sh
-
+cd "$(dirname "$0")/../.."
 uv venv
 
 # uv sync --package management
@@ -48,7 +48,7 @@ done
 kill_port "$LANGGRAPH_PORT"
 
 # contents_verify MCP 서버 실행
-uv run agents/management/modules/mcp/mcp_contents_verify_server.py &
+uv run agents/management/modules/mcp/mcp_contents_verify_server.py > mcp_server.log 2>&1 &
 
 # LangGraph 서버 실행
 # uv run langgraph dev --port "$LANGGRAPH_PORT" &
