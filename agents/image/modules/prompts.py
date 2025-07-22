@@ -14,6 +14,15 @@ outfit_prompt_template = PromptTemplate.from_template(
     "Focus only on the fashion items — their style, color, texture, and how they are combined."
 )
 
+pose_prompt_template = PromptTemplate.from_template(
+    "You are an expert in character expression and pose design.\n"
+    "The following concept should be visually interpreted: '{user_request}'\n\n"
+    "Your task is to write one concise, vivid English sentence that describes only the person's pose and facial expression.\n"
+    "- Include facial emotion, gaze direction, hand gestures, body posture, and movement.\n"
+    "- Do not mention clothing, background, or scene elements.\n"
+    "- The sentence should be suitable for an image generation model.\n"
+    "- Avoid generic expressions and ensure physical cues are clearly described."
+)
 # def get_image_generation_prompt():
 #     """
 #     이미지 생성을 위한 프롬프트 템플릿을 생성합니다.

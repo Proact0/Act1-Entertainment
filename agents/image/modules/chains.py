@@ -18,9 +18,17 @@ from langchain.chains import LLMChain
 from langchain_groq import ChatGroq
 from pydantic import SecretStr
 
-from agents.image.modules.prompts import outfit_prompt_template
+from agents.image.modules.prompts import outfit_prompt_template, pose_prompt_template
 
 load_dotenv()  # .env 파일에서 환경변수 로딩
+
+
+def get_llm():
+    return ChatGroq(
+        api_key=SecretStr(os.getenv("GROQ_API_KEY") or ""),
+        model="llama3-8b-8192",
+        temperature=0,
+    )
 
 
 def get_outfit_prompt_chain():
@@ -32,12 +40,13 @@ def get_outfit_prompt_chain():
     return LLMChain(llm=llm, prompt=outfit_prompt_template)
 
 
-def get_llm():
-    return ChatGroq(
+def get_pose_prompt_chain():
+    llm = ChatGroq(
         api_key=SecretStr(os.getenv("GROQ_API_KEY") or ""),
         model="llama3-8b-8192",
         temperature=0,
     )
+    return LLMChain(llm=llm, prompt=pose_prompt_template)
 
 
 # def set_image_generation_chain() -> RunnableSerializable:

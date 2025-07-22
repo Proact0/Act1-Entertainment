@@ -9,6 +9,7 @@ import re
 from agents.image.modules.chains import get_outfit_prompt_chain
 
 
+# outfit 프롬프트 생성을 위한 노드들
 def concept_adapter_for_outfit_node(state):
     concept_list = state["concept_analysis_result"]
 
@@ -88,3 +89,53 @@ def refine_outfit_prompt_with_llm_node(state):
     refined_prompt = chain.run({"raw_prompt": raw_prompt})
 
     return {**state, "refined_outfit_prompt": refined_prompt.strip()}
+
+
+# # 포즈 프롬프트 생성을 위한 노드들
+def concept_adapter_for_pose_node(state):
+    concept_list = state["concept_analysis_result"]
+    selected = concept_list[:3]  # 상위 3개만 예시
+
+    descs = []
+    for c in selected:
+        keyword = c["keyword"]
+        atmosphere = c["atmosphere"]
+        metaphor = c["visual_metaphor"]
+        descs.append(f"{keyword} ({atmosphere}, {metaphor})")
+
+    prompt_input = (
+        "Based on the following concepts: "
+        + ", ".join(descs)
+        + ". Create a description of a facial expression and pose that visually represents these emotions and objects."
+    )
+
+    return {**state, "adapted_pose_prompt_input": prompt_input}
+
+
+def generate_pose_prompt_node(state):
+    from agents.image.modules.chains import get_pose_prompt_chain
+
+    user_request = state["adapted_pose_prompt_input"]
+    chain = get_pose_prompt_chain()
+    result = chain.run(user_request)
+    return {**state, "pose_prompt": result}
+
+
+def refine_pose_prompt_with_llm_node(state):
+    from langchain.chains import LLMChain
+    from langchain.prompts import PromptTemplate
+
+    from agents.image.modules.chains import get_llm
+
+    prompt_template = PromptTemplate.from_template(
+        "다음은 포즈 스타일링 결과입니다.\n\n{raw_prompt}\n\n"
+        "위 내용에서 포즈와 표정에 관한 부분만 참고하여 영어로 하나의 문장으로 정리하세요.\n"
+        "- 문장은 명확하고 생생해야 하며, 시선 방향, 표정의 감정, 몸의 자세가 들어가야 합니다.\n"
+        "- 문장 외의 설명, 제목 등은 포함하지 마세요.\n"
+        "- 반드시 하나의 영어 문장만 출력하세요."
+    )
+
+    chain = LLMChain(llm=get_llm(), prompt=prompt_template)
+    raw_prompt = state["pose_prompt"]
+    refined = chain.run({"raw_prompt": raw_prompt})
+    return {**state, "refined_pose_prompt": refined.strip()}

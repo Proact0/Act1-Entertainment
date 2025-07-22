@@ -10,9 +10,12 @@ from langgraph.graph import StateGraph
 from agents.base_workflow import BaseWorkflow
 from agents.image.modules.nodes import (
     concept_adapter_for_outfit_node,
+    concept_adapter_for_pose_node,
     generate_outfit_prompt_node,
+    generate_pose_prompt_node,
     refine_outfit_prompt_node,
     refine_outfit_prompt_with_llm_node,
+    refine_pose_prompt_with_llm_node,
 )
 from agents.image.modules.state import ImageState
 
@@ -43,27 +46,32 @@ class ImageWorkflow(BaseWorkflow):
         """
         builder = StateGraph(self.state)
 
-        # 기본 구조: 시작 노드에서 종료 노드로 직접 연결
-        # builder.add_edge("__start__", "__end__")
-
-        # 향후 이미지 생성 노드 추가 예시
-        # builder.add_node("image_generation", ImageGenerationNode())
-        # builder.add_edge("__start__", "image_generation")
-        # builder.add_edge("image_generation", "__end__")
-
         # 의상 프롬프트 생성 노드 추가
         builder.add_node("adapt_outfit_concept", concept_adapter_for_outfit_node)
         builder.add_node("generate_outfit_prompt", generate_outfit_prompt_node)
-        builder.add_node("refine_prompt_rule", refine_outfit_prompt_node)
-        builder.add_node("refine_prompt_llm", refine_outfit_prompt_with_llm_node)
+        builder.add_node("refine_outfit_prompt_rule", refine_outfit_prompt_node)
+        builder.add_node("refine_outfit_prompt_llm", refine_outfit_prompt_with_llm_node)
 
+        # 포즈 프롬프트 생성 노드 추가
+        builder.add_node("adapt_pose_concept", concept_adapter_for_pose_node)
+        builder.add_node("generate_pose_prompt", generate_pose_prompt_node)
+        builder.add_node("refine_pose_prompt_llm", refine_pose_prompt_with_llm_node)
+
+        # Edge 설정
         builder.add_edge("__start__", "adapt_outfit_concept")
-        builder.add_edge("adapt_outfit_concept", "generate_outfit_prompt")
-        builder.add_edge("generate_outfit_prompt", "refine_prompt_rule")
-        builder.add_edge("generate_outfit_prompt", "refine_prompt_llm")
+        # builder.add_edge("__start__", "adapt_pose_concept")
 
-        builder.add_edge("refine_prompt_rule", "__end__")
-        builder.add_edge("refine_prompt_llm", "__end__")
+        # outfit
+        builder.add_edge("adapt_outfit_concept", "generate_outfit_prompt")
+        builder.add_edge("generate_outfit_prompt", "refine_outfit_prompt_rule")
+        builder.add_edge("generate_outfit_prompt", "refine_outfit_prompt_llm")
+        builder.add_edge("refine_outfit_prompt_rule", "__end__")
+        builder.add_edge("refine_outfit_prompt_llm", "__end__")
+
+        # pose
+        builder.add_edge("adapt_pose_concept", "generate_pose_prompt")
+        builder.add_edge("generate_pose_prompt", "refine_pose_prompt_llm")
+        builder.add_edge("refine_pose_prompt_llm", "__end__")
 
         workflow = builder.compile()  # 그래프 컴파일
         workflow.name = self.name  # Workflow 이름 설정
