@@ -6,29 +6,27 @@
 
 import re
 
-from agents.image.modules.chains import get_outfit_prompt_chain
+from agents.image.modules.chains import get_outfit_prompt_chain, get_storyboard_chain
 
 
 # outfit 프롬프트 생성을 위한 노드들
 def concept_adapter_for_outfit_node(state):
-    concept_list = state["concept_analysis_result"]
+    storyboard = state.get("storyboard", {})
 
-    # 상위 3개 콘셉트만 선택 (예: keyword 기준 or index 우선)
-    selected = concept_list[:3]
+    main_theme = storyboard.get("main_theme", "")
+    summary = storyboard.get("story_summary", "")
+    colors = storyboard.get("dominant_colors", [])
+    textures = storyboard.get("texture_keywords", [])
+    motifs = storyboard.get("visual_motifs", [])
 
-    # keyword + visual_metaphor + color_texture를 조합해서 설명 만들기
-    descs = []
-    for c in selected:
-        keyword = c["keyword"]
-        metaphor = c["visual_metaphor"]
-        color = c["color_texture"]
-        descs.append(f"{keyword} ({metaphor}, {color})")
-
-    # 하나의 간결한 프롬프트 입력 문장 생성
+    # 프롬프트 입력 생성
     prompt_input = (
-        "This concept includes elements like "
-        + ", ".join(descs)
-        + ". Create an outfit that visually represents these ideas."
+        f"The main theme is '{main_theme}'.\n"
+        f"Summary: {summary}\n"
+        f"Key visual motifs: {', '.join(motifs)}\n"
+        f"Colors: {', '.join(colors)}\n"
+        f"Textures: {', '.join(textures)}\n\n"
+        "Based on this context, create a fashion outfit that visually reflects these concepts."
     )
 
     return {**state, "adapted_outfit_prompt_input": prompt_input}
@@ -139,3 +137,21 @@ def refine_pose_prompt_with_llm_node(state):
     raw_prompt = state["pose_prompt"]
     refined = chain.run({"raw_prompt": raw_prompt})
     return {**state, "refined_pose_prompt": refined.strip()}
+
+
+def generate_storyboard_node(state):
+    selected_concepts = state[
+        "selected_concepts"
+    ]  # 1.5단계 output으로 들어온 개수 제한된 콘셉트
+    concept_str = str(selected_concepts)  # JSON string 형태로 LLM에 넘김
+
+    chain = get_storyboard_chain()
+    result = chain.run({"concepts": concept_str})
+
+    # 백틱 후처리 (```json or ``` 제거)
+    result = re.sub(r"^```json|^```|```$", "", result.strip()).strip()
+
+    import json
+
+    storyboard = json.loads(result)
+    return {**state, "storyboard": storyboard}

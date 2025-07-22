@@ -23,37 +23,25 @@ pose_prompt_template = PromptTemplate.from_template(
     "- The sentence should be suitable for an image generation model.\n"
     "- Avoid generic expressions and ensure physical cues are clearly described."
 )
-# def get_image_generation_prompt():
-#     """
-#     이미지 생성을 위한 프롬프트 템플릿을 생성합니다.
-#
-#     프롬프트는 LLM에게 사용자 쿼리에 맞는 이미지 생성 방법과
-#     이미지 특성을 설명하도록 지시합니다. 생성된 이미지 설명은 한국어로 반환됩니다.
-#
-#     Returns:
-#         PromptTemplate: 이미지 생성을 위한 프롬프트 템플릿 객체
-#     """
-#     # 이미지 생성을 위한 프롬프트 템플릿 정의
-#     image_generation_template = """당신은 이미지 생성 전문가로서 다양한 스타일과 주제의 이미지를 설명하고
-# 생성하는 데 전문성을 가지고 있습니다. 다음 정보를 바탕으로 이미지를 생성해 주세요:
 
-# 사용자 요청: {query}
 
-# 작업:
-# 위 입력을 사용하여 사용자의 요청에 맞는 이미지를 생성하고 설명해 주세요. 설명에는 다음 내용을 포함해야 합니다:
-
-# - 이미지의 주요 요소와 구성
-# - 이미지의 스타일과 분위기
-# - 색상 팔레트와 조명 효과
-# - 이미지가 전달하는 감정과 메시지
-
-# 설명은 구체적이고 상세하게 작성하여 이미지 제작자가 이해하고 구현할 수 있도록 해주세요.
-# 모든 응답은 한국어로 작성해 주세요.
-
-# 생성된 이미지 설명:"""
-#
-#     # PromptTemplate 객체 생성 및 반환
-#     return PromptTemplate(
-#         template=image_generation_template,  # 정의된 프롬프트 템플릿
-#         input_variables=["query"],  # 프롬프트에 삽입될 변수들
-#     )
+storyboard_prompt_template = PromptTemplate.from_template(
+    "당신은 뮤직 앨범 아트 디렉터입니다. 다음은 앨범 커버 제작을 위한 핵심 콘셉트입니다:\n\n"
+    "{concepts}\n\n"
+    "이 정보를 바탕으로, **앨범 커버에 담길 장면**을 다음 조건에 맞춰 한 문단으로 서술하세요:\n"
+    "1. 구체적인 시각적 이미지로 묘사된 장면일 것 (예: 시간대, 장소, 조명, 인물의 동작 등)\n"
+    "2. 감정의 흐름이 느껴지도록 연출할 것 (예: 그리움에서 활기로 전환되는 느낌)\n"
+    "3. '조화', '상징' 같은 추상적 단어보다는 시각적으로 떠올릴 수 있는 문장을 쓸 것\n"
+    "4. 한국어로 작성할 것\n"
+    "5. 제목처럼 한 줄로 전체 주제를 요약한 `main_theme`를 함께 생성할 것\n"
+    "출력은 아래 JSON 형식을 따르며, 각 항목은 다음과 같은 의미를 가집니다:\n\n"
+    "- main_theme: 전체를 관통하는 핵심 주제 (짧은 문장)\n"
+    "- story_summary: 1문단 정도의 이야기적 흐름 (자연스러운 문장)\n"
+    "- mood_tags: 대표 감정 또는 분위기 키워드 리스트\n"
+    "- dominant_colors: 주요 색상 HEX 코드 리스트 (예: #FFA500)\n"
+    "- texture_keywords: 시각적 질감 키워드 리스트 (예: 벨벳, 거친 표면 등)\n"
+    "- visual_motifs: 공통된 시각적 오브젝트 또는 상징물 리스트\n\n"
+    "- includes_human: 이미지에 인물이 등장하는지 여부 (true 또는 false)"
+    "모든 출력은 한국어로 작성하고, 반드시 JSON 형식만 출력하세요.\n"
+    "Output must be a valid JSON object only. Do NOT include ``` or any Markdown formatting."
+)

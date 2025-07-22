@@ -13,6 +13,7 @@ from agents.image.modules.nodes import (
     concept_adapter_for_pose_node,
     generate_outfit_prompt_node,
     generate_pose_prompt_node,
+    generate_storyboard_node,
     refine_outfit_prompt_node,
     refine_outfit_prompt_with_llm_node,
     refine_pose_prompt_with_llm_node,
@@ -46,6 +47,7 @@ class ImageWorkflow(BaseWorkflow):
         """
         builder = StateGraph(self.state)
 
+        builder.add_node("generate_storyboard", generate_storyboard_node)
         # 의상 프롬프트 생성 노드 추가
         builder.add_node("adapt_outfit_concept", concept_adapter_for_outfit_node)
         builder.add_node("generate_outfit_prompt", generate_outfit_prompt_node)
@@ -58,7 +60,9 @@ class ImageWorkflow(BaseWorkflow):
         builder.add_node("refine_pose_prompt_llm", refine_pose_prompt_with_llm_node)
 
         # Edge 설정
-        builder.add_edge("__start__", "adapt_outfit_concept")
+        builder.add_edge("__start__", "generate_storyboard")
+        builder.add_edge("generate_storyboard", "adapt_outfit_concept")
+        # builder.add_edge("__start__", "adapt_outfit_concept")
         # builder.add_edge("__start__", "adapt_pose_concept")
 
         # outfit
