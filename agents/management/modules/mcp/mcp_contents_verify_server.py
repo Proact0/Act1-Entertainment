@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import httpx
 from fastmcp import FastMCP
@@ -32,22 +32,26 @@ contents_mcp = FastMCP(
 async def verify_instagram_content(
     content_text: str, content_type: str = "text"
 ) -> Dict[str, Any]:
+    logger.info(f"[MCP 서버] verify_instagram_content 호출 - content_text: {content_text}, content_type: {content_type}")
     """
     Perplexity API를 사용하여 인스타그램 컨텐츠의 적절성을 실시간 웹 검색으로 검증합니다.
-
-    Args:
-        content_text (str): 검증할 컨텐츠 텍스트
-        content_type (str): 컨텐츠 유형 (text, image, video, story, reel)
-
-    Returns:
-        Dict[str, Any]: 검증 결과
     """
     logger.info(f"인스타그램 컨텐츠 검증 시작: {content_type}")
     logger.info(f"컨텐츠 길이: {len(content_text)} 문자")
     logger.info(f"verify_instagram_content called with: {content_text}, {content_type}")
 
     if not PERPLEXITY_API_KEY:
-        logger.error("PERPLEXITY_API_KEY가 설정되지 않았습니다.")
+        return {
+            "error": "PERPLEXITY_API_KEY가 설정되지 않았습니다.",
+            "is_approved": False,
+            "score": 0.0,
+            "reasons": ["API 키가 없어 검증을 수행할 수 없습니다."],
+            "warnings": [],
+            "suggestions": ["PERPLEXITY_API_KEY를 설정해주세요."],
+            "risk_level": "high",
+            "content_type": content_type,
+            "tags": [],
+        }
         return {
             "error": "PERPLEXITY_API_KEY가 설정되지 않았습니다.",
             "is_approved": False,
@@ -138,8 +142,17 @@ async def verify_instagram_content(
                     "tags": parsed_result.get("tags", []),
                 }
             except json.JSONDecodeError:
-                # JSON 파싱 실패 시 폴백 분석
-                return _fallback_analysis(content_text, content_type)
+                return {
+                    "error": "Perplexity API 응답 파싱 실패",
+                    "is_approved": False,
+                    "score": 0.0,
+                    "reasons": ["Perplexity API 응답이 올바른 JSON이 아닙니다."],
+                    "warnings": [],
+                    "suggestions": ["다시 시도해주세요."],
+                    "risk_level": "medium",
+                    "content_type": content_type,
+                    "tags": [],
+                }
 
     except Exception as e:
         return {
@@ -155,222 +168,14 @@ async def verify_instagram_content(
         }
 
 
-@contents_mcp.tool()
-async def search_instagram_policies(keywords: str) -> List[Dict[str, Any]]:
-    """
-    인스타그램 정책 및 가이드라인을 검색합니다.
-
-    Args:
-        keywords (str): 검색할 정책 키워드
-
-    Returns:
-        List[Dict[str, Any]]: 정책 정보 목록
-    """
-    logger.info(f"search_instagram_policies called with: {keywords}")
-    if not PERPLEXITY_API_KEY:
-        return [{"error": "PERPLEXITY_API_KEY가 설정되지 않았습니다."}]
-
-    try:
-        prompt = f"""
-다음 키워드로 인스타그램 정책 및 가이드라인을 검색해주세요: {keywords}
-
-다음 정보를 포함하여 JSON 형태로 반환해주세요:
-- 정책 제목
-- 정책 내용 요약
-- 적용 대상
-- 위반 시 조치사항
-- 최신 업데이트 날짜
-- 관련 링크
-
-검색 키워드 예시:
-- "Instagram community guidelines"
-- "Instagram content policy"
-- "Instagram banned content"
-- "Instagram moderation rules"
-"""
-
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://api.perplexity.ai/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {PERPLEXITY_API_KEY}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": "llama-3.1-sonar-small-128k-online",
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": "당신은 인스타그램 정책 전문가입니다. 최신 인스타그램 정책과 가이드라인을 검색하고 구조화된 정보를 제공합니다.",
-                        },
-                        {"role": "user", "content": prompt},
-                    ],
-                    "max_tokens": 1500,
-                    "temperature": 0.1,
-                },
-            )
-
-            if response.status_code != 200:
-                raise Exception(f"Perplexity API 오류: {response.status_code}")
-
-            result = response.json()
-            content = result["choices"][0]["message"]["content"]
-
-            try:
-                parsed_result = json.loads(content)
-                return (
-                    parsed_result
-                    if isinstance(parsed_result, list)
-                    else [parsed_result]
-                )
-            except json.JSONDecodeError:
-                return [{"content": content, "error": "JSON 파싱 실패"}]
-
-    except Exception as e:
-        return [{"error": f"정책 검색 중 오류 발생: {str(e)}"}]
-
-
-@contents_mcp.tool()
-async def analyze_content_risks(content_text: str) -> List[Dict[str, Any]]:
-    """
-    컨텐츠의 잠재적 위험 요소를 분석합니다.
-
-    Args:
-        content_text (str): 분석할 컨텐츠 텍스트
-
-    Returns:
-        List[Dict[str, Any]]: 위험 요소 분석 결과
-    """
-    logger.info(f"analyze_content_risks called with: {content_text}")
-    if not PERPLEXITY_API_KEY:
-        return [{"error": "PERPLEXITY_API_KEY가 설정되지 않았습니다."}]
-
-    try:
-        prompt = f"""
-다음 컨텐츠의 잠재적 위험 요소를 분석해주세요: {content_text}
-
-실시간 웹 검색을 통해 다음을 확인해주세요:
-1. 유사한 컨텐츠의 위반 사례
-2. 관련 키워드의 위험도
-3. 최근 인스타그램에서 제재받은 유사 컨텐츠
-4. 법적/윤리적 문제 가능성
-5. 브랜드 안전성 위험 요소
-
-다음 JSON 형태로 결과를 반환해주세요:
-{{
-    "risk_factors": ["위험 요소들"],
-    "similar_violations": ["유사한 위반 사례들"],
-    "risk_score": 0.0-1.0,
-    "recommendations": ["위험 완화 제안사항들"],
-    "legal_considerations": ["법적 고려사항들"]
-}}
-"""
-
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://api.perplexity.ai/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {PERPLEXITY_API_KEY}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": "llama-3.1-sonar-small-128k-online",
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": "당신은 컨텐츠 위험 분석 전문가입니다. 실시간 웹 검색을 통해 컨텐츠의 잠재적 위험 요소를 분석합니다.",
-                        },
-                        {"role": "user", "content": prompt},
-                    ],
-                    "max_tokens": 1500,
-                    "temperature": 0.1,
-                },
-            )
-
-            if response.status_code != 200:
-                raise Exception(f"Perplexity API 오류: {response.status_code}")
-
-            result = response.json()
-            content = result["choices"][0]["message"]["content"]
-
-            try:
-                parsed_result = json.loads(content)
-                return (
-                    parsed_result
-                    if isinstance(parsed_result, list)
-                    else [parsed_result]
-                )
-            except json.JSONDecodeError:
-                return [{"content": content, "error": "JSON 파싱 실패"}]
-
-    except Exception as e:
-        return [{"error": f"위험 분석 중 오류 발생: {str(e)}"}]
-
-
-def _fallback_analysis(content_text: str, content_type: str) -> Dict[str, Any]:
-    """Perplexity API 실패 시 폴백 분석"""
-    content_lower = content_text.lower()
-
-    # 위험 키워드 체크
-    risk_keywords = ["폭력", "성적", "혐오", "차별", "불법", "스팸", "음란", "폭력적"]
-    high_risk_keywords = ["폭력", "성적", "혐오", "음란"]
-
-    risk_level = "low"
-    if any(keyword in content_lower for keyword in high_risk_keywords):
-        risk_level = "high"
-    elif any(keyword in content_lower for keyword in risk_keywords):
-        risk_level = "medium"
-
-    is_approved = risk_level == "low"
-    score = 0.8 if is_approved else 0.3
-
-    reasons = []
-    if is_approved:
-        reasons.append("컨텐츠가 인스타그램 가이드라인에 적합합니다.")
-    else:
-        reasons.append("위험 키워드가 포함되어 있어 검토가 필요합니다.")
-
-    warnings = []
-    if risk_level == "medium":
-        warnings.append("일부 민감한 내용이 포함되어 있습니다.")
-    elif risk_level == "high":
-        warnings.append("부적절한 내용이 포함되어 있습니다.")
-
-    suggestions = []
-    if not is_approved:
-        suggestions.append("컨텐츠를 수정하거나 재검토하세요.")
-    else:
-        suggestions.append("해시태그를 추가하여 가시성을 높이세요.")
-
-    return {
-        "is_approved": is_approved,
-        "score": score,
-        "reasons": reasons,
-        "warnings": warnings,
-        "suggestions": suggestions,
-        "risk_level": risk_level,
-        "content_type": content_type,
-        "policy_references": [],
-        "similar_cases": [],
-        "tags": [],
-    }
-
-
 if __name__ == "__main__":
     logger.info("MCP Contents Verify 서버 시작 중...")
-    logger.info(f"호스트: {MCP_CONTENTS_HOST}")
-    logger.info(f"포트: {MCP_CONTENTS_PORT}")
-    logger.info(f"전송 방식: {MCP_CONTENTS_TRANSPORT}")
-
     if PERPLEXITY_API_KEY:
         logger.info("PERPLEXITY_API_KEY가 설정되어 있습니다.")
     else:
         logger.warning("PERPLEXITY_API_KEY가 설정되지 않았습니다.")
 
-    print(
-        f"contents_verify MCP server is running on "
-        f"{MCP_CONTENTS_HOST}:{MCP_CONTENTS_PORT}"
-    )
+    print("contents_verify MCP server is running in stdio mode")
 
-    # HTTP 서버로 명시적으로 실행
-    contents_mcp.run(transport="http", host=MCP_CONTENTS_HOST, port=MCP_CONTENTS_PORT)
+    # FastMCP 1.x: stdio 방식, run()만 호출
+    contents_mcp.run(transport="stdio")

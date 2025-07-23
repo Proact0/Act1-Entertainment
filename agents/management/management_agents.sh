@@ -53,5 +53,4 @@ uv run agents/management/modules/mcp/mcp_contents_verify_server.py > mcp_server.
 # LangGraph 서버 실행
 # uv run langgraph dev --port "$LANGGRAPH_PORT" &
 uvx --from "langgraph-cli[inmem]" --with-editable . langgraph dev --port "$LANGGRAPH_PORT" &
-
 wait

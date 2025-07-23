@@ -11,8 +11,8 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "langchain-openai>=0.3.12",
     "langchain_mcp_adapters>=0.1.9",
-    "mcp>=1.0.0",
-    "fastmcp>=0.1.0",
+    "fastmcp<2.0.0",
+    "mcp<2.0.0",
     "httpx>=0.24.0",
     "newsapi-python>=0.2.6",
 

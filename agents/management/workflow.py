@@ -1,3 +1,6 @@
+import logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.getLogger().setLevel(logging.INFO)
 from langgraph.graph import StateGraph
 
 from agents.base_workflow import BaseWorkflow
@@ -30,7 +33,7 @@ class ManagementWorkflow(BaseWorkflow):
             CompiledStateGraph: 컴파일된 상태 그래프 객체
         """
         builder = StateGraph(self.state)
-        builder.add_node("instagram_content_verification", InstagramContentVerificationNode())
+        builder.add_node("instagram_content_verification", InstagramContentVerificationNode().execute)
         builder.add_edge("__start__", "instagram_content_verification")
         builder.add_edge("instagram_content_verification", "__end__")
         workflow = builder.compile()

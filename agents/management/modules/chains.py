@@ -19,7 +19,7 @@ async def set_instagram_content_verification_chain(
     content_text: str, content_type: str = "text"
 ) -> Dict[str, Any]:
     logger = logging.getLogger(__name__)
-    logger.info(f"[체인] set_instagram_content_verification_chain 호출: {content_text}, {content_type}")
+    logger.info(f"[체인] set_instagram_content_verification_chain 비동기 호출 - content_text: {content_text}, content_type: {content_type}")
     """
     인스타그램 컨텐츠 검증을 위한 체인을 생성합니다.
 
