@@ -35,7 +35,8 @@ def verify_instagram_content(
             command,
             capture_output=True,
             check=False,
-            timeout=60.0
+            timeout=60.0,
+            env=os.environ.copy()
         )
 
         if result.stderr:

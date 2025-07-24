@@ -9,12 +9,16 @@ import httpx
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 
+import sys
+
 # .env 파일에서 환경 변수 로드
 load_dotenv()
 
-# 로깅 설정
+# 로깅 설정: 모든 로그를 stderr로 보냅니다.
 logging.basicConfig(
-    level=logging.INFO, format=("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    stream=sys.stderr,
 )
 logger = logging.getLogger(__name__)
 
@@ -22,7 +26,7 @@ PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
 MCP_CONTENTS_HOST = os.getenv("MCP_CONTENTS_HOST", "0.0.0.0")
 MCP_CONTENTS_PORT = int(os.getenv("MCP_CONTENTS_PORT", 8200))
 MCP_CONTENTS_TRANSPORT = os.getenv("MCP_CONTENTS_TRANSPORT", "http")
-print(PERPLEXITY_API_KEY)
+print("PERPLEXITY_API_KEY:", os.getenv("PERPLEXITY_API_KEY"))
 
 contents_mcp = FastMCP(
     name="contents_verify",
@@ -118,14 +122,8 @@ async def verify_instagram_content(
                 json={
                     "model": "sonar",
                     "messages": [
-                        {
-                            "role": "system",
-                            "content": "당신은 인스타그램 컨텐츠 검증 전문가입니다. 실시간 웹 검색을 통해 최신 인스타그램 정책과 위반 사례를 확인하고, 주어진 컨텐츠가 인스타그램에 적합한지 분석합니다.",
-                        },
                         {"role": "user", "content": prompt},
                     ],
-                    "max_tokens": 1500,
-                    "temperature": 0.1,
                 },
             )
 

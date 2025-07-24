@@ -5,9 +5,11 @@ import asyncio
 import base64
 from agents.management.modules.mcp.mcp_contents_verify_server import verify_instagram_content
 
-# 로깅 설정
+# 로깅 설정: 모든 로그를 stderr로 보냅니다.
 logging.basicConfig(
-    level=logging.INFO, format=("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    stream=sys.stderr,
 )
 logger = logging.getLogger(__name__)
 
