@@ -1,74 +1,65 @@
 import os
 import logging
 import json
-import asyncio
+import subprocess
+import base64
 from typing import Any, Dict
 
-from langchain_mcp_adapters.tools import load_mcp_tools
-from langgraph.prebuilt import create_react_agent
-from mcp import ClientSession
+logger = logging.getLogger(__name__)
 
-from agents.management.modules.models import get_openai_model
-
-
-async def verify_instagram_content(
+def verify_instagram_content(
     content_text: str, content_type: str = "text"
 ) -> Dict[str, Any]:
-    logger = logging.getLogger(__name__)
     logger.info(
         f"[MCP 클라이언트] verify_instagram_content 호출 - content_text: {content_text}, content_type: {content_type}"
     )
-    # 서버 실행 명령어와 인자 지정
+    
     mcp_server_command = os.getenv("MCP_SERVER_COMMAND", "python3")
-    mcp_server_args = os.getenv(
-        "MCP_SERVER_ARGS", "agents/management/modules/mcp/mcp_contents_verify_server.py"
-    ).split()
-    logger.info(
-        f"[MCP 클라이언트] MCP_SERVER_COMMAND: {mcp_server_command}, MCP_SERVER_ARGS: {mcp_server_args}"
-    )
+    # 모듈로 실행할 경로
+    module_path = "agents.management.modules.mcp"
+    
+    input_payload = {
+        "content_text": content_text,
+        "content_type": content_type,
+    }
+    input_json = json.dumps(input_payload)
+    encoded_input = base64.b64encode(input_json.encode('utf-8')).decode('utf-8')
 
-    command = [mcp_server_command] + mcp_server_args
-    command_str = " ".join(command)
-    logger.info(f"[MCP 클라이언트] Executing command: {command_str}")
-
-    proc = await asyncio.create_subprocess_shell(
-        command_str,
-        stdin=asyncio.subprocess.PIPE,
-        stdout=asyncio.subprocess.PIPE,
-    )
+    # python -m <module_path> <encoded_input> 형태로 커맨드 구성
+    command = [mcp_server_command, "-m", module_path, encoded_input]
+    logger.info(f"[MCP 클라이언트] Executing command: {' '.join(command)}")
 
     try:
-        async with ClientSession(proc.stdout, proc.stdin) as session:
-            await session.initialize()
-            tools = await load_mcp_tools(session)
-            print("사용 가능한 도구:", tools)
+        # subprocess.run을 사용하여 동기적으로 프로세스를 실행하고 결과를 기다립니다.
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            check=False,
+            timeout=60.0
+        )
 
-            graph = create_react_agent(model=get_openai_model(), tools=tools)
+        if result.stderr:
+            logger.error(f"[MCP 서버 stderr]\n{result.stderr.decode('utf-8', 'ignore').strip()}")
 
-            query = (
-                f"다음 인스타그램 컨텐츠를 검증해주세요: "
-                f"{content_text} (유형: {content_type})"
-            )
-            response = await graph.ainvoke({"messages": [("user", query)]})
+        if result.returncode != 0:
+            logger.error(f"MCP 서버 프로세스가 비정상적으로 종료되었습니다. Exit code: {result.returncode}")
+            return {"error": f"MCP 서버 오류 (exit code: {result.returncode})"}
 
-            last_content = None
-            if "messages" in response:
-                messages = response["messages"]
-                for message in reversed(messages):
-                    if hasattr(message, "content") and message.content:
-                        last_content = message.content
-                        break
-            if last_content:
-                try:
-                    return json.loads(last_content)
-                except json.JSONDecodeError:
-                    logger.error(
-                        f"Failed to decode JSON from LLM response: {last_content}"
-                    )
-                    # Return a dict that indicates an error
-                    return {"error": "Invalid JSON response from model"}
+        if not result.stdout:
+            logger.error("MCP 서버로부터 응답이 없습니다.")
+            return {"error": "MCP 서버로부터 응답을 받지 못했습니다."}
+            
+        try:
+            return json.loads(result.stdout.decode('utf-8'))
+        except json.JSONDecodeError:
+            logger.error(f"MCP 서버의 응답을 파싱하는 데 실패했습니다: {result.stdout.decode('utf-8')}")
+            return {"error": "MCP 서버로부터 유효하지 않은 JSON 응답을 받았습니다."}
 
-            return {"error": "No content received from model"}
-    finally:
-        proc.kill()
-        await proc.wait()
+    except subprocess.TimeoutExpired:
+        logger.error("MCP 서버와의 통신 시간이 초과되었습니다.")
+        return {"error": "MCP 서버 시간 초과"}
+        
+    except Exception as e:
+        logger.error(f"MCP 클라이언트에서 예외가 발생했습니다: {e}")
+        return {"error": f"클라이언트 오류: {e}"}
+

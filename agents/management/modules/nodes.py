@@ -20,24 +20,28 @@ class InstagramContentVerificationNode(BaseNode):
         super().__init__(**kwargs)
         self.chain = set_instagram_content_verification_chain
 
-    async def execute(self, state: ManagementState) -> dict:
+    def execute(self, state: ManagementState) -> dict:
         print("노드 실행", state)
         logger = logging.getLogger(__name__)
-        logger.info(f"[노드] InstagramContentVerificationNode.execute 비동기 호출 - state: {state}")
+        logger.info(f"[노드] InstagramContentVerificationNode.execute 호출 - state: {state}")
 
-        # content_verification_result 내부까지 탐색
+        # langgraph API는 입력을 'input' 키 아래에 중첩시킬 수 있습니다.
+        # 'input' 키가 있는지 확인하고, 있다면 해당 딕셔너리를 사용합니다.
+        input_data = state.get("input") if isinstance(state.get("input"), dict) else state
+
         content_verification = state.get("content_verification_result", {})
+        
         content_text = (
-            state.get("content_text")
-            or state.get("query", "")
+            input_data.get("content_text")
+            or input_data.get("query", "")
             or content_verification.get("content_text", "")
         )
         content_type = (
-            state.get("content_type")
+            input_data.get("content_type")
             or content_verification.get("content_type", "text")
         )
         logger.info(f"[노드] content_text: {content_text}, content_type: {content_type}")
 
-        result = await self.chain(content_text, content_type)
+        result = self.chain(content_text, content_type)
         state["content_verification_result"] = result
         return {"response": result}

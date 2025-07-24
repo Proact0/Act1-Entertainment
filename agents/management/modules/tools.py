@@ -15,18 +15,17 @@
 
 from typing import Any, Dict
 import logging
-import asyncio
 
 from agents.management.modules.mcp.mcp_client import verify_instagram_content
 
 
-async def verify_instagram_content_tool(
+def verify_instagram_content_tool(
     content_text: str, content_type: str = "text"
 ) -> Dict[str, Any]:
     logger = logging.getLogger(__name__)
-    logger.info(f"[도구] verify_instagram_content_tool 비동기 호출 - content_text: {content_text}, content_type: {content_type}")
+    logger.info(f"[도구] verify_instagram_content_tool 호출 - content_text: {content_text}, content_type: {content_type}")
     try:
-        result = await verify_instagram_content(content_text, content_type)
+        result = verify_instagram_content(content_text, content_type)
         return result
     except Exception as e:
         logger.error(f"[도구] 예외 발생: {e}")

@@ -1,10 +1,16 @@
 import json
 import logging
 import os
+import asyncio
+import base64
 from typing import Any, Dict
 
 import httpx
+from dotenv import load_dotenv
 from fastmcp import FastMCP
+
+# .env 파일에서 환경 변수 로드
+load_dotenv()
 
 # 로깅 설정
 logging.basicConfig(
@@ -16,6 +22,7 @@ PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
 MCP_CONTENTS_HOST = os.getenv("MCP_CONTENTS_HOST", "0.0.0.0")
 MCP_CONTENTS_PORT = int(os.getenv("MCP_CONTENTS_PORT", 8200))
 MCP_CONTENTS_TRANSPORT = os.getenv("MCP_CONTENTS_TRANSPORT", "http")
+print(PERPLEXITY_API_KEY)
 
 contents_mcp = FastMCP(
     name="contents_verify",
@@ -40,18 +47,20 @@ async def verify_instagram_content(
     logger.info(f"컨텐츠 길이: {len(content_text)} 문자")
     logger.info(f"verify_instagram_content called with: {content_text}, {content_type}")
 
-    if not PERPLEXITY_API_KEY:
+    if not content_text or not content_text.strip():
         return {
-            "error": "PERPLEXITY_API_KEY가 설정되지 않았습니다.",
+            "error": "컨텐츠 텍스트가 비어 있습니다.",
             "is_approved": False,
             "score": 0.0,
-            "reasons": ["API 키가 없어 검증을 수행할 수 없습니다."],
+            "reasons": ["검증할 컨텐츠가 없습니다."],
             "warnings": [],
-            "suggestions": ["PERPLEXITY_API_KEY를 설정해주세요."],
+            "suggestions": ["컨텐츠를 입력해주세요."],
             "risk_level": "high",
             "content_type": content_type,
             "tags": [],
         }
+
+    if not PERPLEXITY_API_KEY:
         return {
             "error": "PERPLEXITY_API_KEY가 설정되지 않았습니다.",
             "is_approved": False,
@@ -99,7 +108,7 @@ async def verify_instagram_content(
 }}
 """
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(
                 "https://api.perplexity.ai/chat/completions",
                 headers={
@@ -107,7 +116,7 @@ async def verify_instagram_content(
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": "llama-3.1-sonar-small-128k-online",
+                    "model": "sonar",
                     "messages": [
                         {
                             "role": "system",
@@ -121,6 +130,9 @@ async def verify_instagram_content(
             )
 
             if response.status_code != 200:
+                # API 에러 발생 시, 응답 본문을 로깅하여 더 자세한 정보를 확인합니다.
+                error_details = response.text
+                logger.error(f"Perplexity API 오류: {response.status_code} - {error_details}")
                 raise Exception(f"Perplexity API 오류: {response.status_code}")
 
             result = response.json()
@@ -154,9 +166,24 @@ async def verify_instagram_content(
                     "tags": [],
                 }
 
-    except Exception as e:
+    except httpx.ReadTimeout:
+        logger.error("Perplexity API 응답 시간 초과")
         return {
-            "error": f"검증 중 오류 발생: {str(e)}",
+            "error": "Perplexity API 응답 시간 초과",
+            "is_approved": False,
+            "score": 0.0,
+            "reasons": ["Perplexity API에서 응답이 지연되어 검증을 완료할 수 없습니다."],
+            "warnings": ["네트워크 상태나 Perplexity API의 부하 문제일 수 있습니다."],
+            "suggestions": ["잠시 후 다시 시도해주세요."],
+            "risk_level": "medium",
+            "content_type": content_type,
+            "tags": [],
+        }
+    except Exception as e:
+        # 예외 발생 시, 예외 유형과 메시지, 표현을 모두 로깅합니다.
+        logger.error(f"검증 중 예외 발생: {type(e).__name__} - {e!r}")
+        return {
+            "error": f"검증 중 오류 발생: {type(e).__name__}",
             "is_approved": False,
             "score": 0.0,
             "reasons": ["검증 중 오류가 발생했습니다."],
@@ -167,15 +194,3 @@ async def verify_instagram_content(
             "tags": [],
         }
 
-
-if __name__ == "__main__":
-    logger.info("MCP Contents Verify 서버 시작 중...")
-    if PERPLEXITY_API_KEY:
-        logger.info("PERPLEXITY_API_KEY가 설정되어 있습니다.")
-    else:
-        logger.warning("PERPLEXITY_API_KEY가 설정되지 않았습니다.")
-
-    print("contents_verify MCP server is running in stdio mode")
-
-    # FastMCP 1.x: stdio 방식, run()만 호출
-    contents_mcp.run(transport="stdio")
