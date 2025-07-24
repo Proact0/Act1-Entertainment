@@ -17,7 +17,6 @@ class CollectCommentsWorkflow(BaseWorkflow):
         workflow = StateGraph(self.state)
 
         # 노드 등록
-        workflow.add_node("init_driver", nodes.InitDriverNode())
         workflow.add_node("collect_post_links", nodes.CollectPostLinksNode())
         workflow.add_node("set_current_post_url", nodes.SetCurrentPostUrlNode())
         workflow.add_node("load_comments", nodes.LoadCommentsNode())
@@ -25,8 +24,7 @@ class CollectCommentsWorkflow(BaseWorkflow):
         workflow.add_node("save_comments", nodes.SaveCommentsNode())
 
         # 엣지 설정
-        workflow.set_entry_point("init_driver")
-        workflow.add_edge("init_driver", "collect_post_links")
+        workflow.set_entry_point("collect_post_links")
         workflow.add_edge("collect_post_links", "set_current_post_url")
         workflow.add_edge("save_comments", "set_current_post_url")
         workflow.add_edge("load_comments", "extract_comments")
@@ -34,7 +32,7 @@ class CollectCommentsWorkflow(BaseWorkflow):
 
         # 조건부 엣지
         def has_more_posts(state: CollectCommentsState) -> str:
-            return "load_comments" if state.current_post_url else "__end__"
+            return "load_comments" if state["current_post_url"] else "__end__"
 
         workflow.add_conditional_edges("set_current_post_url", has_more_posts, {
             "load_comments": "load_comments",

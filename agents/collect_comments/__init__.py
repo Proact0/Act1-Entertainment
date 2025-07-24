@@ -10,8 +10,7 @@ __all__ = ["collect_comments_workflow"]
 
 
 """
-comments_workflow를 실행할 때, 기본적으로 게시물이 6개 이하라면 정상적으로 반복 실행되며 종료됩니다.
-하지만 게시물 수가 6개를 초과할 경우, workflow는 최대 6번까지만 실행되고 중단됩니다.
+"comments_workflow"를 실행할 때 링크 수가 너무 많으면 마지막 링크까지 실행되지 않을 수 있습니다.
 
 이 문제를 해결하려면 invoke 메서드를 사용하고,
 config 옵션으로 recursion_limit 값을 충분히 크게 설정하면
