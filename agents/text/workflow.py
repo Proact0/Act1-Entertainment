@@ -1,5 +1,3 @@
-from dotenv import load_dotenv
-
 from langgraph.graph import StateGraph
 
 from agents.base_workflow import BaseWorkflow
