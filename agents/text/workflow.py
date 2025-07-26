@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+
 from langgraph.graph import StateGraph
 
 from agents.base_workflow import BaseWorkflow
@@ -5,6 +7,7 @@ from agents.text.modules.nodes import (
     GenTextNode,
     PersonaExtractionNode,
     TextContentCheckNode,
+    TextRegeneratorRouterNode,
 )
 from agents.text.modules.state import TextState
 
@@ -42,22 +45,27 @@ class TextWorkflow(BaseWorkflow):
         # 텍스트 컨텐츠 체커 노드 추가
         builder.add_node("text_content_check", TextContentCheckNode())
 
+        # 텍스트 재생성 노드 추가
+        builder.add_node("text_check_router", TextRegeneratorRouterNode())
+
         # 시작 노드에서 페르소나 추출 노드로 연결
         builder.add_edge("__start__", "persona_extraction")
         # 페르소나 추출 노드에서 텍스트 생성 노드로 연결
         builder.add_edge("persona_extraction", "text_generation")
         # 텍스트 생성 노드에서 텍스트 컨텐츠 체커 노드로 연결
         builder.add_edge("text_generation", "text_content_check")
-        # 텍스트 컨텐츠 체커 노드에서 종료 노드로 연결
-        builder.add_edge("text_content_check", "__end__")
+        # 텍스트 컨텐츠 체커 노드에서 텍스트 재생성 노드로 연결
+        builder.add_edge("text_content_check", "text_check_router")
 
-        # 조건부 에지 추가 예시
-        # builder.add_conditional_edges(
-        #     "call_model",
-        #     # call_model 실행이 완료된 후, 다음 노드(들)는
-        #     # router의 출력을 기반으로 예약됩니다
-        #     router,
-        # )
+        # 조건부 에지 추가
+        builder.add_conditional_edges(
+            "text_check_router",
+            lambda state: state["next"],  # state에서 next 키의 값을 사용
+            {
+                "text_generation": "text_content_check",  # 실패시 text_generation으로 돌아감
+                "__end__": "__end__",  # 성공시 종료
+            },
+        )
 
         workflow = builder.compile()  # 그래프 컴파일
         workflow.name = self.name  # Workflow 이름 설정

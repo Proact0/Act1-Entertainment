@@ -99,3 +99,26 @@ class TextContentCheckNode(BaseNode):
         result = self.chain.invoke(input_data)
         state.update(result)
         return result
+
+
+class TextRegeneratorRouterNode(BaseNode):
+    """
+    텍스트 체크 결과를 기반으로 다음 노드를 결정하는 라우터 노드
+    """
+
+    def execute(self, state: TextState) -> dict:
+        """
+        텍스트 체크 결과를 평가하여 다음 실행할 노드를 결정합니다.
+
+        Args:
+            state (TextState): 현재 워크플로우 상태
+
+        Returns:
+            dict: 다음 노드 정보를 포함한 상태 업데이트
+        """
+        check_result = state.get("text_content_checker_result", {})
+        next_node = (
+            "__end__" if check_result.get("success", False) else "text_generation"
+        )
+
+        return {"next": next_node}
