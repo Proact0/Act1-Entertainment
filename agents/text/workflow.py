@@ -5,7 +5,8 @@ from agents.text.modules.nodes import (
     GenTextNode,
     PersonaExtractionNode,
     TextContentCheckNode,
-    TextRegeneratorRouterNode,
+    TextRegenerateRouterNode
+,
 )
 from agents.text.modules.state import TextState
 
@@ -44,7 +45,7 @@ class TextWorkflow(BaseWorkflow):
         builder.add_node("text_content_check", TextContentCheckNode())
 
         # 텍스트 재생성 노드 추가
-        builder.add_node("text_check_router", TextRegeneratorRouterNode())
+        builder.add_node("text_regenerate_router", TextRegenerateRouterNode())
 
         # 시작 노드에서 페르소나 추출 노드로 연결
         builder.add_edge("__start__", "persona_extraction")
@@ -53,11 +54,11 @@ class TextWorkflow(BaseWorkflow):
         # 텍스트 생성 노드에서 텍스트 컨텐츠 체커 노드로 연결
         builder.add_edge("text_generation", "text_content_check")
         # 텍스트 컨텐츠 체커 노드에서 텍스트 재생성 노드로 연결
-        builder.add_edge("text_content_check", "text_check_router")
+        builder.add_edge("text_content_check", "text_regenerate_router")
 
         # 조건부 에지 추가
         builder.add_conditional_edges(
-            "text_check_router",
+            "text_regenerate_router",
             lambda state: state["next"],  # state에서 next 키의 값을 사용
             {
                 "text_generation": "text_content_check",  # 실패시 text_generation으로 돌아감

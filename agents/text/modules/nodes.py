@@ -101,7 +101,7 @@ class TextContentCheckNode(BaseNode):
         return result
 
 
-class TextRegeneratorRouterNode(BaseNode):
+class TextRegenerateRouterNode(BaseNode):
     """
     텍스트 체크 결과를 기반으로 다음 노드를 결정하는 라우터 노드
     """
