@@ -10,15 +10,45 @@ import requests
 from typing import Dict, Any, List, Optional
 from dotenv import load_dotenv
 from datetime import datetime
+from pydantic import BaseModel, Field
+import sys
+
+# Add the project root to sys.path to resolve module import issues for internal modules
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+sys.path.append(project_root)
 
 from agents.base_node import BaseNode
 from agents.management.modules.state import ManagementState
-from agents.management.modules.prompts import get_instagram_comment_analysis_prompt
+from agents.management.modules.prompts import get_instagram_comment_analysis_prompt, get_instagram_analysis_report_prompt
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
+from langchain_core.utils.function_calling import convert_to_openai_tool
 
 load_dotenv(override=True)
+
+class CommentAnalysis(BaseModel):
+    """A single analyzed Instagram comment."""
+    comment: str = Field(description="The original comment text.")
+    sentiment: str = Field(description="Sentiment of the comment (e.g., '긍정', '부정', '중립').")
+    comment_type: str = Field(description="Type of the comment (e.g., '팬댓글', '질문', '비판').")
+    reply_needed: str = Field(description="Whether a reply is needed ('예', '아니오', '고려').")
+    reason: str = Field(description="Reason for the sentiment, type, and reply_needed assessment.")
+
+class InstagramCommentsAnalysisOutput(BaseModel):
+    """The structured output for Instagram comment analysis."""
+    comments: List[CommentAnalysis] = Field(description="A list of analyzed Instagram comments.")
+
+class InstagramAnalysisReportOutput(BaseModel):
+    """The structured output for an Instagram comments analysis report."""
+    report_date: str = Field(description="The date the report was generated (YYYY-MM-DD-HH-MM).")
+    total_comments_analyzed: int = Field(description="Total number of comments analyzed.")
+    summary: str = Field(description="A comprehensive summary of the Instagram comments analysis.")
+    key_insights: List[str] = Field(description="Key insights derived from the comment analysis, e.g., trends, recurring themes.")
+    sentiment_distribution: Dict[str, int] = Field(description="Distribution of sentiments (e.g., {'긍정': X, '부정': Y, '중립': Z}).")
+    comment_type_distribution: Dict[str, int] = Field(description="Distribution of comment types (e.g., {'팬댓글': A, '질문': B, '비판': C, '기타': D}).")
+    reply_needed_breakdown: Dict[str, int] = Field(description="Breakdown of comments needing a reply (e.g., {'예': E, '아니오': F, '고려': G}).")
+    action_items: List[str] = Field(description="Actionable recommendations for community management based on the analysis.")
 
 class InstagramMediaFetchNode(BaseNode):
     """
@@ -218,35 +248,53 @@ class InstagramCommentsAnalysisNode(BaseNode):
         prompt_template = get_instagram_comment_analysis_prompt()
         prompt = prompt_template.format(comments=comments_str)
 
-        # LangChain 기반 Gemini LLM 호출
         try:
-            api_key = os.environ.get("GOOGLE_API_KEY")
+            api_key = state.get("api_key","")
             if not api_key:
                 return {"response": "GOOGLE_API_KEY 환경변수가 설정되어 있지 않습니다.", "comment_analysis_result": None}
+
             llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
-            response = llm.invoke([HumanMessage(content=prompt)])
-            result_text = response.content if hasattr(response, "content") else str(response)
-            print(f"[InstagramCommentsAnalysisNode] 분석 결과:\n{result_text}")
-            state["comment_analysis_result"] = result_text
+            # Bind the Pydantic model as a tool
+            response = llm.invoke(prompt)
+            print(f"LLM Raw Response: {response.content}")
+
+            # Parse the raw JSON string output from the LLM
+            try:
+                json_content = response.content
+                # Remove markdown code block fences if present
+                if json_content.startswith('```json') and json_content.endswith('```'):
+                    json_content = json_content[len('```json'):-len('```')].strip()
+                
+                # Using .model_validate_json for Pydantic v2
+                parsed_output = InstagramCommentsAnalysisOutput.model_validate_json(json_content)
+            except Exception as parse_error:
+                raise ValueError(f"Failed to parse LLM response as JSON: {parse_error}\nRaw content: {response.content}")
+
+            analysis_result_dict = parsed_output.model_dump()
+
+            print(f"[InstagramCommentsAnalysisNode] 분석 결과:\n{json.dumps(analysis_result_dict, ensure_ascii=False, indent=2)}")
+            state["comment_analysis_result"] = analysis_result_dict
             
             # 분석 결과를 별도 json 파일로 저장
-
             now_str = datetime.now().isoformat()
             analysis_file_path = state.get("comment_analysis_file_path")
-            # 파일이 존재하면 기존 데이터에 추가, 없으면 새로 생성
+            
             if os.path.exists(analysis_file_path):
                 try:
                     with open(analysis_file_path, 'r', encoding='utf-8') as f:
                         analysis_data = json.load(f)
                 except Exception:
                     analysis_data = {}
-                analysis_data[now_str] = result_text
+                analysis_data[now_str] = analysis_result_dict
             else:
-                analysis_data = {now_str: result_text}
+                # Ensure the directory exists before writing the file
+                os.makedirs(os.path.dirname(analysis_file_path), exist_ok=True)
+                analysis_data = {now_str: analysis_result_dict}
+            
             with open(analysis_file_path, 'w', encoding='utf-8') as f:
-                json.dump(analysis_data, f, ensure_ascii=False, indent=2)
+                json.dump(analysis_data, f, ensure_ascii=False, indent=2, separators=(',', ': '))
             print(f"[InstagramCommentsAnalysisNode] 분석 결과를 {analysis_file_path}에 저장했습니다.")
-            return {"comment_analysis_result": result_text, "response": "댓글 분석이 완료되었습니다."}
+            return {"comment_analysis_result": analysis_result_dict, "response": "댓글 분석이 완료되었습니다."}
         except Exception as e:
             print(f"[InstagramCommentsAnalysisNode] Gemini 호출 오류: {str(e)}")
             return {"response": f"Gemini 호출 오류: {str(e)}", "comment_analysis_result": None}
@@ -266,3 +314,58 @@ class NoChangeNode(BaseNode):
         return {
             "response": "댓글 수에 변경이 없습니다. 모니터링을 계속합니다."
         }
+
+
+class InstagramAnalysisReportNode(BaseNode):
+    """
+    인스타그램 댓글 분석 보고서를 생성하는 노드
+    """
+    def execute(self, state: ManagementState) -> Dict[str, Any]:
+        print(f"🔍 [InstagramAnalysisReportNode] 실행 중...")
+        report_file_path = state.get("analysis_report_file_path")
+
+        # Load analysis data directly from state
+        analyzed_data = state.get("comment_analysis_result")
+        if not analyzed_data:
+            return {"response": "분석 데이터가 상태에 존재하지 않습니다.", "analysis_report": None}
+        print(f"📁 [InstagramAnalysisReportNode] 분석 데이터를 상태에서 불러왔습니다.")
+
+        # Prompt LLM for report generation
+        prompt_template = get_instagram_analysis_report_prompt()
+        prompt = prompt_template.format(analyzed_data=json.dumps(analyzed_data, ensure_ascii=False, indent=2))
+
+        try:
+            api_key = state.get("api_key", "")
+            if not api_key:
+                return {"response": "GOOGLE_API_KEY 환경변수가 설정되어 있지 않습니다.", "analysis_report": None}
+
+            llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+            response = llm.invoke(prompt)
+            print(f"LLM Raw Report Response: {response.content}")
+
+            # Parse the raw JSON string output from the LLM
+            try:
+                json_content = response.content
+                if json_content.startswith('```json') and json_content.endswith('```'):
+                    json_content = json_content[len('```json'):-len('```')].strip()
+                
+                parsed_report = InstagramAnalysisReportOutput.model_validate_json(json_content)
+            except Exception as parse_error:
+                raise ValueError(f"Failed to parse LLM report as JSON: {parse_error}\nRaw content: {response.content}")
+            
+            report_dict = parsed_report.model_dump()
+            report_dict['media_id'] = state.get("user_id","")
+
+            # Save the report to a new JSON file
+            os.makedirs(os.path.dirname(report_file_path), exist_ok=True)
+            with open(report_file_path, 'w', encoding='utf-8') as f:
+                json.dump(report_dict, f, ensure_ascii=False, indent=2, separators=(',', ': '))
+            print(f"[InstagramAnalysisReportNode] 분석 보고서를 {report_file_path}에 저장했습니다.")
+
+            return {"analysis_report": report_dict, "response": "분석 보고서 생성이 완료되었습니다."
+            }
+        except Exception as e:
+            print(f"[InstagramAnalysisReportNode] Gemini 호출 또는 보고서 생성 오류: {str(e)}")
+            return {"response": f"Gemini 호출 또는 보고서 생성 오류: {str(e)}", "analysis_report": None}
+
+
