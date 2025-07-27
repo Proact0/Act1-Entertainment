@@ -42,7 +42,7 @@ class ImageGenerationNode(BaseNode):
             {
                 "content_topic": state['content_topic'], 
                 "content_type": state['content_type'],
-                "context_detail":state['context_detail'],
+                "context_describe":state['context_describe'],
                 "persona": state['persona']  # 페르소나 세부 정보
             }
         , generation_config = dict(response_modalities = ["TEXT"]))
@@ -50,8 +50,9 @@ class ImageGenerationNode(BaseNode):
         
         
         return {"response": response}
+
     
-class getInputNode(BaseNode):
+class getStoryBoardNode(BaseNode):
     """
     다른 노드로부터 온 input을 받아서, 해석하는 노드 
     """
@@ -70,6 +71,7 @@ class getInputNode(BaseNode):
                 "content_topic": state['content_topic'], 
                 "content_type": state['content_type'],
                 "context": state['context'] , 
+                "genre" : state['genre'],
                 "persona": PERSONA  
             }
         , generation_config = dict(response_modalities = ["TEXT"]))

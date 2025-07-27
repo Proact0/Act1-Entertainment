@@ -37,9 +37,5 @@ class PersonaExtractionNode(BaseNode):
         # 추출된 페르소나를 응답으로 반환
         return {"response": extracted_persona}
     
-class getInputNode(BaseNode):
-    """
-    다른 노드로부터 온 input을 받는 노드 
-    """
 
     

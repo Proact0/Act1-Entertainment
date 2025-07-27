@@ -28,7 +28,7 @@ def set_image_generation_chain() -> RunnableSerializable:
             content_topic=lambda x: x["content_topic"],  # 콘텐츠 주제 추출
             content_type=lambda x: x["content_type"],  # 콘텐츠 유형 추출
             persona=lambda x: PERSONA,
-            context_detail = lambda x: x["context_detail"]
+            context_detail = lambda x: x["context_describe"]
         )
          | prompt  # 프롬프트 적용
          | model   # LLM 모델 호출

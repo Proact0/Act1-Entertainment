@@ -25,5 +25,6 @@ class ImageState(TypedDict):
     content_topic: str
     content_type: str
     context: str 
-    context_describe : str
+    context_detail : str
+    genre:str
     persona : str

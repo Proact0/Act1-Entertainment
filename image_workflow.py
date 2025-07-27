@@ -13,7 +13,7 @@ from langchain_core.runnables import RunnableLambda
 from agents.text.modules.persona import PERSONA
 from agents.image.modules.state import ImageState
 
-from agents.image.modules.nodes import ImageGenerationNode, getInputNode
+from agents.image.modules.nodes import ImageGenerationNode, getStoryBoardNode
 from agents.text.modules.nodes import PersonaExtractionNode
 
 load_dotenv()
@@ -32,15 +32,15 @@ def get_input() -> list:
 
     return data 
 
-def input_extraction_node(state:dict) -> dict:
-    interpret_input_node = getInputNode(name = "input_node")
-    interpreted_text = interpret_input_node.execute(state)
+def storyboard_node(state:dict) -> dict:
+    story_node = getStoryBoardNode(name = "input_node")
+    interpreted_text = story_node.execute(state)
 
     return {"content_topic": "앨범 커버", 
         "content_type": "앨범 제작",
         "context":state['context'],
         "context_describe": interpreted_text['response'] ,
-        "persona": PERSONA}
+        "persona": state['persona']}
 
 def persona_extraction_node(state: dict) -> dict:
     persona_node = PersonaExtractionNode(name="persona_extraction")
@@ -49,10 +49,12 @@ def persona_extraction_node(state: dict) -> dict:
     return {
         "content_topic": state["content_topic"],
         "content_type": state["content_type"],
-        "context_detail":state['context_describe'
-        ''],
+        "context": state['context'],
+        "genre":state['genre'],
         "persona":extracted_persona
     }
+
+
 
 def image_generation_node(state: dict) -> dict:
     image_node = ImageGenerationNode(name="image_generation")
@@ -61,14 +63,14 @@ def image_generation_node(state: dict) -> dict:
 
 def build_graph():
     builder = StateGraph(dict)  # ImageState 대신 dict 사용
-    builder.add_node("InputExtraction", RunnableLambda(input_extraction_node))
     builder.add_node("PersonaExtraction", RunnableLambda(persona_extraction_node))
+    builder.add_node("StoryBoardExtraction", RunnableLambda(storyboard_node))
     builder.add_node("ImageGeneration", RunnableLambda(image_generation_node))
     
     
-    builder.set_entry_point("InputExtraction")
-    builder.add_edge("InputExtraction","PersonaExtraction")
-    builder.add_edge("PersonaExtraction", "ImageGeneration")
+    builder.set_entry_point("PersonaExtraction")
+    builder.add_edge("PersonaExtraction", "StoryBoardExtraction")
+    builder.add_edge("StoryBoardExtraction", "ImageGeneration")
     builder.add_edge("ImageGeneration", END)  # set_finish_point 대신 END 사용
 
     return builder.compile()
@@ -79,6 +81,7 @@ if __name__ == "__main__":
     initial_state = {
         "content_topic": "앨범 커버", 
         "content_type": "앨범 제작",
+        "genre": "힙합", 
         "context": inputData ,
         "persona": PERSONA
     }
