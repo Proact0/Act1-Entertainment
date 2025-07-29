@@ -42,6 +42,7 @@ class InstagramContentVerificationNode(BaseNode):
         )
         logger.info(f"[노드] content_text: {content_text}, content_type: {content_type}")
 
+        # self.chain이 함수이므로 직접 호출
         result = self.chain(content_text, content_type)
         state["content_verification_result"] = result
         return {"response": result}

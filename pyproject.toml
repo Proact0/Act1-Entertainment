@@ -16,7 +16,7 @@ dependencies = [
     "httpx>=0.24.0",
     "newsapi-python>=0.2.6",
     "langgraph-checkpoint-sqlite",
-
+    "langchain-google-genai>=2.0.0",
 ]
 
 [dependency-groups]

@@ -4,7 +4,7 @@ import logging
 import os
 from dotenv import load_dotenv
 from agents.management.modules.tools import verify_instagram_content_tool
-
+#/Pseudo-Entertainment$ uv run run_verification.py '{"content_text": "오나전 야마", "content_type": "text"}'
 # .env 파일에서 환경 변수 로드
 load_dotenv()
 

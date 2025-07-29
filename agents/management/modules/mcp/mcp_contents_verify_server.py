@@ -26,7 +26,7 @@ PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
 MCP_CONTENTS_HOST = os.getenv("MCP_CONTENTS_HOST", "0.0.0.0")
 MCP_CONTENTS_PORT = int(os.getenv("MCP_CONTENTS_PORT", 8200))
 MCP_CONTENTS_TRANSPORT = os.getenv("MCP_CONTENTS_TRANSPORT", "http")
-print("PERPLEXITY_API_KEY:", os.getenv("PERPLEXITY_API_KEY"))
+logger.info(f"PERPLEXITY_API_KEY: {os.getenv('PERPLEXITY_API_KEY')}")
 
 contents_mcp = FastMCP(
     name="contents_verify",
@@ -135,11 +135,16 @@ async def verify_instagram_content(
 
             result = response.json()
             content = result["choices"][0]["message"]["content"]
-
+            
+            # Perplexity API 응답 로깅
+            logger.info(f"Perplexity API 응답 상태: {response.status_code}")
+            logger.info(f"Perplexity API 원본 응답: {content}")
+            
             # JSON 파싱
             try:
                 parsed_result = json.loads(content)
-                return {
+                logger.info(f"Perplexity API 파싱된 결과: {json.dumps(parsed_result, ensure_ascii=False, indent=2)}")
+                final_result = {
                     "is_approved": parsed_result.get("is_approved", False),
                     "score": float(parsed_result.get("score", 0.0)),
                     "reasons": parsed_result.get("reasons", []),
@@ -151,6 +156,9 @@ async def verify_instagram_content(
                     "similar_cases": parsed_result.get("similar_cases", []),
                     "tags": parsed_result.get("tags", []),
                 }
+                
+                logger.info(f"최종 검증 결과: {json.dumps(final_result, ensure_ascii=False, indent=2)}")
+                return final_result
             except json.JSONDecodeError:
                 return {
                     "error": "Perplexity API 응답 파싱 실패",
