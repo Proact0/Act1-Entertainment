@@ -10,8 +10,10 @@ from .state import CollectCommentsState
 from agents.base_node import BaseNode
 
 class CollectPostLinksNode(BaseNode):
-    
-    def execute(self, state: dict) -> dict:
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def execute(self, state: CollectCommentsState) -> dict:
         # WebDriver 초기화
         options = Options()
         options.add_argument("--start-maximized")
@@ -43,8 +45,10 @@ class CollectPostLinksNode(BaseNode):
 
 
 class SetCurrentPostUrlNode(BaseNode):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
     
-    def execute(self, state: dict) -> dict:
+    def execute(self, state: CollectCommentsState) -> dict:
         # 처리할 게시물이 없으면 current_post_url을 None으로 설정
         if not state.get("post_links"):
             print("DEBUG: 처리할 게시물이 더 이상 없습니다.")
@@ -61,8 +65,10 @@ class SetCurrentPostUrlNode(BaseNode):
 
 
 class LoadCommentsNode(BaseNode):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
     
-    def execute(self, state: dict) -> dict:
+    def execute(self, state: CollectCommentsState) -> dict:
         post_address = state.get("current_post_url")
 
         if not isinstance(post_address, str) or not post_address.strip():
@@ -96,8 +102,10 @@ class LoadCommentsNode(BaseNode):
 
 
 class ExtractCommentsNode(BaseNode):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
     
-    def execute(self, state: dict) -> dict:
+    def execute(self, state: CollectCommentsState) -> dict:
         # 페이지 소스에서 댓글 텍스트 추출
         soup = bs(state.get("page_source", ""), 'html.parser')
         comments = []
@@ -138,8 +146,10 @@ class ExtractCommentsNode(BaseNode):
 
 
 class SaveCommentsNode(BaseNode):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
     
-    def execute(self, state: dict) -> dict:
+    def execute(self, state: CollectCommentsState) -> dict:
         # 댓글을 CSV 파일에 저장
         with open(state["csv_filename"], mode='a', newline='', encoding='utf-8-sig') as file:
             writer = csv.writer(file)

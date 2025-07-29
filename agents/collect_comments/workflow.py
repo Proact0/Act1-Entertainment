@@ -2,6 +2,7 @@ from langgraph.graph import StateGraph
 from agents.base_workflow import BaseWorkflow
 from agents.collect_comments.modules import nodes
 from agents.collect_comments.modules.state import CollectCommentsState
+from agents.collect_comments.modules.conditions import has_more_posts
 
 class CollectCommentsWorkflow(BaseWorkflow):
     """
@@ -31,9 +32,6 @@ class CollectCommentsWorkflow(BaseWorkflow):
         workflow.add_edge("extract_comments", "save_comments")
 
         # 조건부 엣지
-        def has_more_posts(state: CollectCommentsState) -> str:
-            return "load_comments" if state["current_post_url"] else "__end__"
-
         workflow.add_conditional_edges("set_current_post_url", has_more_posts, {
             "load_comments": "load_comments",
             "__end__": "__end__"
