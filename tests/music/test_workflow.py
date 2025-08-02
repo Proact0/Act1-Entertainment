@@ -7,7 +7,7 @@
 """
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from agents.music.workflow import MusicWorkflow
 from agents.music.modules.state import MusicState

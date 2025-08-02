@@ -5,11 +5,10 @@
 """
 
 from agents.base_node import BaseNode
-from agents.music.modules.prompts import get_lyric_template, get_diary_template, get_query_extraction_template, get_youtube_query_template, get_youtube_analysis_template
+from agents.music.modules.prompts import get_lyric_template, get_diary_template, get_query_extraction_template, get_youtube_analysis_template
 from agents.music.modules.state import MusicState
 from agents.music.modules.models import get_openai_model, get_gemini_client, get_youtube_client
 from agents.music.modules.tools.weather import WeatherService
-from googleapiclient.discovery import build
 from google import genai
 
 

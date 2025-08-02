@@ -8,7 +8,7 @@
 from datetime import datetime, timedelta
 import json
 import requests
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from dotenv import load_dotenv
 import os 
 

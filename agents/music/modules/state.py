@@ -8,7 +8,7 @@ LangGraph의 상태 관리를 위한 클래스를 포함합니다.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Annotated, TypedDict, Any, Dict
+from typing import Annotated, TypedDict
 from langgraph.graph.message import add_messages
 
 
