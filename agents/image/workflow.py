@@ -9,8 +9,10 @@ from langgraph.graph import StateGraph
 
 from agents.base_workflow import BaseWorkflow
 from agents.image.modules.nodes import (
+    concept_adapter_for_hair_node,
     concept_adapter_for_outfit_node,
     concept_adapter_for_pose_node,
+    generate_hair_prompt_node,
     generate_outfit_prompt_node,
     generate_pose_prompt_node,
     generate_storyboard_node,
@@ -59,9 +61,15 @@ class ImageWorkflow(BaseWorkflow):
         builder.add_node("generate_pose_prompt", generate_pose_prompt_node)
         builder.add_node("refine_pose_prompt_llm", refine_pose_prompt_with_llm_node)
 
+        # 헤어 프롬프트 생성 노드 추가
+        builder.add_node("adapt_hair_concept", concept_adapter_for_hair_node)
+        builder.add_node("generate_hair_prompt", generate_hair_prompt_node)
+
         # Edge 설정
         builder.add_edge("__start__", "generate_storyboard")
-        builder.add_edge("generate_storyboard", "adapt_outfit_concept")
+        # builder.add_edge("generate_storyboard", "adapt_outfit_concept")
+        builder.add_edge("generate_storyboard", "adapt_hair_concept")
+        # builder.add_edge("generate_storyboard", "adapt_pose_concept")
         # builder.add_edge("__start__", "adapt_outfit_concept")
         # builder.add_edge("__start__", "adapt_pose_concept")
 
@@ -76,6 +84,10 @@ class ImageWorkflow(BaseWorkflow):
         builder.add_edge("adapt_pose_concept", "generate_pose_prompt")
         builder.add_edge("generate_pose_prompt", "refine_pose_prompt_llm")
         builder.add_edge("refine_pose_prompt_llm", "__end__")
+
+        # hair
+        builder.add_edge("adapt_hair_concept", "generate_hair_prompt")
+        builder.add_edge("generate_hair_prompt", "__end__")
 
         workflow = builder.compile()  # 그래프 컴파일
         workflow.name = self.name  # Workflow 이름 설정

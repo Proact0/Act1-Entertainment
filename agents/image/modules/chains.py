@@ -53,5 +53,14 @@ def get_pose_prompt_chain():
     return LLMChain(llm=llm, prompt=pose_prompt_template)
 
 
+def get_hair_prompt_chain():
+    llm = ChatGroq(
+        api_key=SecretStr(os.getenv("GROQ_API_KEY") or ""),
+        model="llama-3.3-70b-versatile",
+        temperature=0,
+    )
+    return LLMChain(llm=llm, prompt=pose_prompt_template)
+
+
 def get_storyboard_chain():
     return LLMChain(llm=get_llm(), prompt=storyboard_prompt_template)

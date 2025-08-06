@@ -36,5 +36,7 @@ class ImageState(TypedDict):
     refined_pose_prompt: str
     # 스토리보드 관련 필드
     storyboard: str
+    adapted_hair_prompt_input: str  # 헤어 스타일링 프롬프트 입력 (사용자의 요청에 따라 생성된 헤어 스타일링 프롬프트)
+    hair_prompt: str
 
     # 의상 프롬프트 (사용자의 요청에 따라 생성된 의상 스타일링 프롬프트)

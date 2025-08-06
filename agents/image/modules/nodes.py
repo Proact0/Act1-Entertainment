@@ -9,6 +9,24 @@ import re
 from agents.image.modules.chains import get_outfit_prompt_chain, get_storyboard_chain
 
 
+def generate_storyboard_node(state):
+    selected_concepts = state[
+        "selected_concepts"
+    ]  # 1.5단계 output으로 들어온 개수 제한된 콘셉트
+    concept_str = str(selected_concepts)  # JSON string 형태로 LLM에 넘김
+
+    chain = get_storyboard_chain()
+    result = chain.run({"concepts": concept_str})
+
+    # 백틱 후처리 (```json or ``` 제거)
+    result = re.sub(r"^```json|^```|```$", "", result.strip()).strip()
+
+    import json
+
+    storyboard = json.loads(result)
+    return {**state, "storyboard": storyboard}
+
+
 # outfit 프롬프트 생성을 위한 노드들
 def concept_adapter_for_outfit_node(state):
     storyboard = state.get("storyboard", {})
@@ -90,21 +108,25 @@ def refine_outfit_prompt_with_llm_node(state):
 
 
 # # 포즈 프롬프트 생성을 위한 노드들
+
+
 def concept_adapter_for_pose_node(state):
-    concept_list = state["concept_analysis_result"]
-    selected = concept_list[:3]  # 상위 3개만 예시
+    storyboard = state.get("storyboard", {})
 
-    descs = []
-    for c in selected:
-        keyword = c["keyword"]
-        atmosphere = c["atmosphere"]
-        metaphor = c["visual_metaphor"]
-        descs.append(f"{keyword} ({atmosphere}, {metaphor})")
+    main_theme = storyboard.get("main_theme", "")
+    summary = storyboard.get("story_summary", "")
+    colors = storyboard.get("dominant_colors", [])
+    textures = storyboard.get("texture_keywords", [])
+    motifs = storyboard.get("visual_motifs", [])
 
+    # 프롬프트 입력 생성
     prompt_input = (
-        "Based on the following concepts: "
-        + ", ".join(descs)
-        + ". Create a description of a facial expression and pose that visually represents these emotions and objects."
+        f"The main theme is '{main_theme}'.\n"
+        f"Summary: {summary}\n"
+        f"Key visual motifs: {', '.join(motifs)}\n"
+        f"Colors: {', '.join(colors)}\n"
+        f"Textures: {', '.join(textures)}\n\n"
+        "Based on this context, create a description of a facial expression and pose that visually represents these emotions and objects."
     )
 
     return {**state, "adapted_pose_prompt_input": prompt_input}
@@ -129,6 +151,7 @@ def refine_pose_prompt_with_llm_node(state):
         "다음은 포즈 스타일링 결과입니다.\n\n{raw_prompt}\n\n"
         "위 내용에서 포즈와 표정에 관한 부분만 참고하여 영어로 하나의 문장으로 정리하세요.\n"
         "- 문장은 명확하고 생생해야 하며, 시선 방향, 표정의 감정, 몸의 자세가 들어가야 합니다.\n"
+        "- 포즈를 사진으로 또는 그림으로 표현하기 좋도록 적절하고 구체적으로 묘사하세요.\n"
         "- 문장 외의 설명, 제목 등은 포함하지 마세요.\n"
         "- 반드시 하나의 영어 문장만 출력하세요."
     )
@@ -139,19 +162,44 @@ def refine_pose_prompt_with_llm_node(state):
     return {**state, "refined_pose_prompt": refined.strip()}
 
 
-def generate_storyboard_node(state):
-    selected_concepts = state[
-        "selected_concepts"
-    ]  # 1.5단계 output으로 들어온 개수 제한된 콘셉트
-    concept_str = str(selected_concepts)  # JSON string 형태로 LLM에 넘김
+# 헤어 프롬프트 생성을 위한 노드들
 
-    chain = get_storyboard_chain()
-    result = chain.run({"concepts": concept_str})
 
-    # 백틱 후처리 (```json or ``` 제거)
-    result = re.sub(r"^```json|^```|```$", "", result.strip()).strip()
+def concept_adapter_for_hair_node(state):
+    storyboard = state.get("storyboard", {})
 
-    import json
+    main_theme = storyboard.get("main_theme", "")
+    summary = storyboard.get("story_summary", "")
+    colors = storyboard.get("dominant_colors", [])
+    textures = storyboard.get("texture_keywords", [])
+    motifs = storyboard.get("visual_motifs", [])
 
-    storyboard = json.loads(result)
-    return {**state, "storyboard": storyboard}
+    # 프롬프트 입력 생성
+    prompt_input = (
+        f"The main theme is '{main_theme}'.\n"
+        f"Summary: {summary}\n"
+        f"Key visual motifs: {', '.join(motifs)}\n"
+        f"Colors: {', '.join(colors)}\n"
+        f"Textures: {', '.join(textures)}\n\n"
+        "🎯 Your task:\n"
+        "**ONLY** describe a suitable **hairstyle** that reflects the above mood, texture, and symbols.\n"
+        "Do NOT describe facial expression, body posture, outfit, or background. Focus on the hairstyle only.\n\n"
+        "Include details such as:\n"
+        "- hair length\n"
+        "- shape and silhouette\n"
+        "- texture and volume\n"
+        "- movement (e.g., flowing, tied, layered)\n"
+        "- color (linked to the given palette)\n\n"
+        "Respond in English, and keep the style vivid but concise."
+    )
+
+    return {**state, "adapted_hair_prompt_input": prompt_input}
+
+
+def generate_hair_prompt_node(state):
+    from agents.image.modules.chains import get_hair_prompt_chain
+
+    user_request = state["adapted_hair_prompt_input"]
+    chain = get_hair_prompt_chain()
+    result = chain.run(user_request)
+    return {**state, "hair_prompt": result}
