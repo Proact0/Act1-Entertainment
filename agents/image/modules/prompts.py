@@ -31,39 +31,52 @@ Output:
         template=template,
         input_variables=["album_cover_style", "concepts", "format_instructions"],
     )
-    
 
-# def get_image_generation_prompt():
-#     """
-#     이미지 생성을 위한 프롬프트 템플릿을 생성합니다.
-#
-#     프롬프트는 LLM에게 사용자 쿼리에 맞는 이미지 생성 방법과
-#     이미지 특성을 설명하도록 지시합니다. 생성된 이미지 설명은 한국어로 반환됩니다.
-#
-#     Returns:
-#         PromptTemplate: 이미지 생성을 위한 프롬프트 템플릿 객체
-#     """
-#     # 이미지 생성을 위한 프롬프트 템플릿 정의
-#     image_generation_template = """당신은 이미지 생성 전문가로서 다양한 스타일과 주제의 이미지를 설명하고
-# 생성하는 데 전문성을 가지고 있습니다. 다음 정보를 바탕으로 이미지를 생성해 주세요:
 
-# 사용자 요청: {query}
+def choose_layout_prompt():
+    """감정 흐름이 담긴 이미지 시나리오(output_storyboard)에 적합한 카메라 구도(각, 비율, 프레이밍)를 선택하기 위한 프롬프트 템플릿을 생성합니다.
+    """
+    template = """당신은 시각 이미지 제작 전문가입니다. 아래에 주어진 이미지 시나리오를 바탕으로, 가장 적합한 레이아웃 구도(카메라 각도, 화면 비율, 프레이밍)를 선택해야 합니다.
 
-# 작업:
-# 위 입력을 사용하여 사용자의 요청에 맞는 이미지를 생성하고 설명해 주세요. 설명에는 다음 내용을 포함해야 합니다:
+도출 요구:
+- 이미지 시나리오: {output_storyboard}
 
-# - 이미지의 주요 요소와 구성
-# - 이미지의 스타일과 분위기
-# - 색상 팔레트와 조명 효과
-# - 이미지가 전달하는 감정과 메시지
+당신은 다음의 기준을 고려하여 가장 적절한 레이아웃 구도를 판단해야 합니다:
+- 장면의 감정적 흐름(예: 그리움 → 활기 → 열정)을 얼마나 잘 전달할 수 있는가
+- 인물과 배경 사이의 관계를 효과적으로 시각화할 수 있는가
+- 시네마틱한 매력과 시각적 임팩트를 제공하는가
+- 트렌디하고 현대적인 연출이 가능한가
+- 실제 연출(예: AI 이미지 생성 등)로 구현 가능한 구도인가
 
-# 설명은 구체적이고 상세하게 작성하여 이미지 제작자가 이해하고 구현할 수 있도록 해주세요.
-# 모든 응답은 한국어로 작성해 주세요.
+---
+Output:
+{format_instructions}
+"""
+    return PromptTemplate(
+        template=template,
+        input_variables=["output_storyboard", "format_instructions"],
+    )
 
-# 생성된 이미지 설명:"""
-#
-#     # PromptTemplate 객체 생성 및 반환
-#     return PromptTemplate(
-#         template=image_generation_template,  # 정의된 프롬프트 템플릿
-#         input_variables=["query"],  # 프롬프트에 삽입될 변수들
-#     )
+def decomposition_concept():
+    prompt = """
+GOAL:
+신곡의 앨범 커버를 기획하기 위해
+가사‧메시지‧노래 스타일을 ‘콘셉트 분해’작업을 진행해 주세요.
+
+🎯 도출 요구
+1. 키워드(가사과 스타일), 감정 및 분위기 매핑
+2. 감정별 시각적 메타포/오브젝트 제안(예: 네온사인, 골드 컨페티)
+3. 어울리는 색상과 질감 아이디어(HEX 코드 포함)  
+
+📌 작성 규칙
+- 키워드는 최소 6개 이상(핵심 키워드 다양화)  
+- 메타포는 추상(예: “따뜻함”)이 아닌 구체 오브젝트로 표현  
+- 장황한 설명 없이 출력
+- 결과를 아래 JSON List 형식으로 처리
+    conceptAnalyzer={json_schema}
+    Return a `list[conceptAnalyzer]`
+"""
+    return PromptTemplate(
+        template=prompt,
+        input_variables=["json_schema"],
+    )

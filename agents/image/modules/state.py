@@ -29,4 +29,5 @@ class ImageState(TypedDict):
 
     album_cover_style: str  # 앨범 커버 스타일
     concepts: list[dict]  # 제공된 개념들의 리스트 (각 개념
+    output_storyboard: str  # 출력 스토리보드 (감정 흐름이 담긴 이미지 시나리오)
     

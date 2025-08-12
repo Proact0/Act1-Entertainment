@@ -9,7 +9,8 @@ from langgraph.graph import StateGraph, START, END
 
 from agents.base_workflow import BaseWorkflow
 from agents.image.modules.state import ImageState
-from agents.image.modules.nodes import ConceptChooseNode
+from agents.image.modules.nodes.concept_choose import ConceptChooseNode
+from agents.image.modules.nodes.layout_node import LayoutNode
 
 
 class ImageWorkflow(BaseWorkflow):
@@ -38,9 +39,13 @@ class ImageWorkflow(BaseWorkflow):
         builder = StateGraph(self.state)
 
         # 기본 구조: 시작 노드에서 종료 노드로 직접 연결
-        builder.add_node("concept_choose", ConceptChooseNode())
-        builder.add_edge(START, "concept_choose")  # 시작 노드에서 개념
-        builder.add_edge("concept_choose", END)
+        # builder.add_node("concept_choose", ConceptChooseNode())
+        # builder.add_edge(START, "concept_choose")  # 시작 노드에서 개념
+        # builder.add_edge("concept_choose", END)
+
+        builder.add_node("Layout Selection", LayoutNode())
+        builder.set_entry_point("Layout Selection")  # 레이아웃 선택 노드 설정
+        builder.set_finish_point("Layout Selection")
 
         # 향후 이미지 생성 노드 추가 예시
         # builder.add_node("image_generation", ImageGenerationNode())
