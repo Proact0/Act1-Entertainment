@@ -28,6 +28,7 @@ class ImageState(TypedDict):
     ]  # 응답 메시지 목록 (add_messages로 주석되어 메시지 추가 기능 제공)
 
     album_cover_style: str  # 앨범 커버 스타일
-    concepts: list[dict]  # 제공된 개념들의 리스트 (각 개념
+    decomposition_concepts: list[dict]  # 분해된 컨셉
+    chosen_concepts : list[dict]
     output_storyboard: str  # 출력 스토리보드 (감정 흐름이 담긴 이미지 시나리오)
     

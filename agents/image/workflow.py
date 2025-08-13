@@ -10,7 +10,7 @@ from langgraph.graph import StateGraph, START, END
 from agents.base_workflow import BaseWorkflow
 from agents.image.modules.state import ImageState
 from agents.image.modules.nodes.concept_choose import ConceptChooseNode
-from agents.image.modules.nodes.layout_node import LayoutNode
+from agents.image.modules.nodes import LayoutNode, ConceptDecompositionNode, ConceptChooseNode, CreateStoryboardNode
 
 
 class ImageWorkflow(BaseWorkflow):
@@ -43,8 +43,15 @@ class ImageWorkflow(BaseWorkflow):
         # builder.add_edge(START, "concept_choose")  # 시작 노드에서 개념
         # builder.add_edge("concept_choose", END)
 
+        builder.add_node("Concept Decomposition", ConceptDecompositionNode())
+        builder.add_node("Choose Concept", ConceptChooseNode())
+        builder.add_node("Create Storyboard", CreateStoryboardNode())
         builder.add_node("Layout Selection", LayoutNode())
-        builder.set_entry_point("Layout Selection")  # 레이아웃 선택 노드 설정
+        builder.set_entry_point("Concept Decomposition")  # 레이아웃 선택 노드 설정
+        builder.add_edge("Concept Decomposition", "Choose Concept")
+        builder.add_edge("Choose Concept", "Create Storyboard")
+        builder.add_edge("Create Storyboard", "Layout Selection")
+
         builder.set_finish_point("Layout Selection")
 
         # 향후 이미지 생성 노드 추가 예시

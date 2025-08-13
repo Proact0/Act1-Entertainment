@@ -5,7 +5,7 @@ LCEL(LangChain Expression Language)을 사용하여 체인을 구성합니다.
 """
 
 from langchain.schema.runnable import RunnablePassthrough, RunnableSerializable
-from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.output_parsers import PydanticOutputParser, JsonOutputParser
 
 from agents.image.modules.models import get_gemini_model
 from agents.image.modules.prompts import choose_concept_prompt, choose_layout_prompt, decomposition_concept
@@ -109,6 +109,3 @@ def set_layout_choose_chain() -> RunnableSerializable:
         | model
         | pydantic_parser
     )
-
-def set_decomposition_concept_chain() -> RunnableSerializable:
-    

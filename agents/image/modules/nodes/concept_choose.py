@@ -33,7 +33,9 @@ class ConceptChooseNode(BaseNode):
         response = self.chain.invoke(
             {
                 "album_cover_style": state["album_cover_style"],  # 앨범 커버 스타일
-                "concepts": state["concepts"],  # 제공된 개념들
+                "concepts": state["decomposition_concepts"],  # 제공된 개념들
             }
         )
-        return response
+        return {
+            "chosen_concepts" : response
+        }
